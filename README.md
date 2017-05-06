@@ -21,7 +21,8 @@ zoneminder
 Changes:
 
 2017-05-05
-- Perl scripts are no longer exposed at config/.  They change on each version and can't be persistent.
+- Perl scripts are no longer exposed at /config/.  They change on each version and can't be persistent.
+- Add ssmtp package for email alerts.  Ssmtp configuration files are at /config/Zoneminder/ssmtp/.
 
 2017-05-05
 - Initial release.

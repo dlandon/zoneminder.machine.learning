@@ -8,7 +8,15 @@
 		echo "File zm.conf already exists"
 	fi
 
-	# Copy mysql database if it doesn't exit
+	# Move ssmtp configuration if it doesn't exist
+	if [ ! -d /config/ssmtp ]; then
+		echo "Moving ssmtp to config folder"
+		cp -p -R /etc/ssmtp/ /config/
+	else
+		echo "Using existing ssmtp configuration"
+	fi
+
+	# Move mysql database if it doesn't exit
 	if [ ! -d /config/mysql/mysql ]; then
 		echo "Moving mysql to config folder"
 		rm -rf /config/mysql
@@ -29,9 +37,11 @@
 	fi
 
 	echo "Creating symbolink links"
+	rm -r /etc/ssmtp
 	rm -r /var/lib/mysql
 	rm -r /etc/zm
 	rm -r /usr/share/zoneminder/www/skins
+	ln -s /config/ssmtp /etc/ssmtp
 	ln -s /config/mysql /var/lib/mysql
 	ln -s /config /etc/zm
 	ln -s /config/skins /usr/share/zoneminder/www/skins
