@@ -24,6 +24,8 @@ Changes:
 - Perl scripts are no longer exposed at /config/.  They change on each version and can't be persistent.
 - Add ssmtp package for email alerts.  Ssmtp configuration files are at /config/Zoneminder/ssmtp/.
 - Add libav-tools package for missing avconv.
+- Cleanup symlinks.
+- Remove installation files from /root/.
 
 2017-05-05
 - Initial release.

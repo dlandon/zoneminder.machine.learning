@@ -47,7 +47,8 @@ RUN \
 	wget www.andywilcock.com/code/cambozola/cambozola-latest.tar.gz && \
 	tar xvf cambozola-latest.tar.gz && \
 	cp cambozola*/dist/cambozola.jar /usr/share/zoneminder/www && \
-	rm -fr cambozola-latest.tar.gz && \
+	rm -rf cambozola*/ && \
+	rm -rf cambozola-latest.tar.gz && \
 	chmod 775 /usr/share/zoneminder/www/cambozola.jar && \
 	chown -R www-data:www-data /usr/share/zoneminder/ && \
 
@@ -61,7 +62,9 @@ RUN \
 	mysql -uroot -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';" && \
 	mysqladmin -uroot reload && \
 	mysql -sfu root < "mysql_secure_installation.sql" && \
+	rm mysql_secure_installation.sql && \
 	mysql -sfu root < "mysql_defaults.sql" && \
+	rm mysql_defaults.sql && \
 
 	service mysql restart && \
 	sleep 10 && \

@@ -25,7 +25,7 @@
 		echo "Using existing mysql database"
 	fi
 
-	# Perl5 directory is not exposed at config.
+	# Perl5 directory is no longer exposed at config.
 	rm -r /config/perl5/ 2>/dev/null
 
 	if [ ! -d /config/skins ]; then
@@ -37,13 +37,20 @@
 	fi
 
 	echo "Creating symbolink links"
+	# ssmtp
 	rm -r /etc/ssmtp
-	rm -r /var/lib/mysql
-	rm -r /etc/zm
-	rm -r /usr/share/zoneminder/www/skins
 	ln -s /config/ssmtp /etc/ssmtp
+
+	# mysql
+	rm -r /var/lib/mysql
 	ln -s /config/mysql /var/lib/mysql
-	ln -s /config /etc/zm
+
+	# zm.conf
+	rm -r /etc/zm/zm.conf
+	ln -sf /config/zm.conf /etc/zm/
+
+	# skins
+	rm -r /usr/share/zoneminder/www/skins
 	ln -s /config/skins /usr/share/zoneminder/www/skins
 
 	# Set ownership for unRAID
@@ -106,5 +113,6 @@
 	# Update the database if necessary
 	zmupdate.pl -nointeractive
 	zmupdate.pl -f
+
 	service apache2 start
 	service zoneminder start
