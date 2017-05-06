@@ -32,6 +32,7 @@ RUN \
 	apt-get install -y wget && \
 	apt-get install -y sudo && \
 	apt-get install -y cakephp && \
+	apt-get install -y libav-tools && \
 	apt-get install -y ssmtp && \
 	apt-get install -y mailutils && \
 	apt-get install -y zoneminder=1.30.3* php-gd && \
