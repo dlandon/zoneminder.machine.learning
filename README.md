@@ -21,5 +21,8 @@ zoneminder
 Changes:
 
 2017-05-05
+- Perl scripts are no longer exposed at config/.  They change on each version and can't be persistent.
+
+2017-05-05
 - Initial release.
 - Fixed update so databases can now be upgraded in place.

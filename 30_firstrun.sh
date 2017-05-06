@@ -17,14 +17,8 @@
 		echo "Using existing mysql database"
 	fi
 
-	if [ ! -d /config/perl5 ]; then
-		echo "Moving perl data folder to config folder"
-		mkdir /config/perl5
-	else
-		echo "Using existing perl data directory"
-	fi
-	# Move the current ZoneMinder perl directory
-	cp -R -p /usr/share/perl5/ZoneMinder /config/perl5/
+	# Perl5 directory is not exposed at config.
+	rm -r /config/perl5/ 2>/dev/null
 
 	if [ ! -d /config/skins ]; then
 		echo "Moving skins folder to config folder"
@@ -37,11 +31,9 @@
 	echo "Creating symbolink links"
 	rm -r /var/lib/mysql
 	rm -r /etc/zm
-	rm -r /usr/share/perl5/ZoneMinder
 	rm -r /usr/share/zoneminder/www/skins
 	ln -s /config/mysql /var/lib/mysql
 	ln -s /config /etc/zm
-	ln -s /config/perl5/ZoneMinder /usr/share/perl5/ZoneMinder
 	ln -s /config/skins /usr/share/zoneminder/www/skins
 
 	# Set ownership for unRAID
