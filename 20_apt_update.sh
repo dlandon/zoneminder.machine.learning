@@ -10,5 +10,5 @@ apt-get update
 apt-get -y upgrade
 apt-get -y dist-upgrade
 
-# Clean + purgeold/obsoleted packages
+# Clean + purge old/obsoleted packages
 apt-get -y autoremove

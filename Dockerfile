@@ -2,15 +2,16 @@ FROM phusion/baseimage:0.9.20
 
 MAINTAINER dlandon
 
-ENV DEBCONF_NONINTERACTIVE_SEEN="true" \
-DEBIAN_FRONTEND="noninteractive" \
-DISABLESSH="true" \
-LC_ALL="C.UTF-8" \
-LANG="en_US.UTF-8" \
-LANGUAGE="en_US.UTF-8" \
-SHMEM="50%" \
-TZ="Etc/UTC" \
-TERM="xterm"
+ENV \
+	DEBCONF_NONINTERACTIVE_SEEN="true" \
+	DEBIAN_FRONTEND="noninteractive" \
+	DISABLESSH="true" \
+	LC_ALL="C.UTF-8" \
+	LANG="en_US.UTF-8" \
+	LANGUAGE="en_US.UTF-8" \
+	SHMEM="50%" \
+	TZ="Etc/UTC" \
+	TERM="xterm"
 
 COPY 20_apt_update.sh /etc/my_init.d/
 COPY 30_firstrun.sh /etc/my_init.d/
@@ -35,7 +36,7 @@ RUN \
 	apt-get install -y libav-tools && \
 	apt-get install -y ssmtp && \
 	apt-get install -y mailutils && \
-	apt-get install -y zoneminder=1.30.3* php-gd && \
+	apt-get install -y zoneminder=1.30.4* php-gd && \
 	chmod 740 /etc/zm/zm.conf && \
 	chown root:www-data /etc/zm/zm.conf && \
 	adduser www-data video && \
@@ -73,8 +74,7 @@ RUN \
 	apt-get clean && \
 
 	systemd-tmpfiles --create zoneminder.conf && \
-	chmod +x /etc/my_init.d/20_apt_update.sh && \
-	chmod +x /etc/my_init.d/30_firstrun.sh && \
+	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf && \
 
 	rm /etc/apt/sources.list.d/iconnor-ubuntu-zoneminder-xenial.list && \
@@ -84,8 +84,9 @@ RUN \
 	update-rc.d -f mysql remove && \
 	update-rc.d -f mysql-common remove
 
-VOLUME ["/config"]
-VOLUME ["/var/cache/zoneminder"]
+VOLUME \
+	["/config"] \
+	["/var/cache/zoneminder"]
 
 EXPOSE 80
 

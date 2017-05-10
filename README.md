@@ -1,4 +1,4 @@
-# Zoneminder 1.30.3 for unRAID
+# Zoneminder 1.30.4 for unRAID
 
 The configuration settings that are needed for this implementation of Zoneminder are pre-applied and do not need to be changed on the first run of Zoneminder.
 
@@ -19,6 +19,9 @@ docker run -d --name="Zoneminder" \
 zoneminder
 
 Changes:
+
+2017-05-09
+- Update to version 1.30.4.
 
 2017-05-06
 - Perl scripts are no longer exposed at /config/.  They change on each version and can't be persistent.
