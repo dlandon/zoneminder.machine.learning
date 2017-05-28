@@ -20,6 +20,9 @@ zoneminder
 
 Changes:
 
+2017-05-28
+- Fix permissions on /config/data/ folders.
+
 2017-05-09
 - Update to version 1.30.4.
 
