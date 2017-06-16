@@ -67,13 +67,14 @@ chown -R nobody:users /config
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
 chmod -R go+rw /config
-# chown root:www-data /var/cache/zoneminder
+chown root:www-data /var/cache/zoneminder
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
 	echo "Create events folder"
 	mkdir /var/cache/zoneminder/events
-	chmod -R go+rw /var/cache/zoneminder/events
+	chown root:www-data /var/cache/zoneminder/events
+	chmod go+rw /var/cache/zoneminder/events
 else
 	echo "Using existing data directory for events"
 fi
@@ -82,7 +83,8 @@ fi
 if [ ! -d /var/cache/zoneminder/images ]; then
 	echo "Create images folder"
 	mkdir /var/cache/zoneminder/images
-	chmod -R go+rw /var/cache/zoneminder/images
+	chown root:www-data /var/cache/zoneminder/images
+	chmod go+rw /var/cache/zoneminder/images
 else
 	echo "Using existing data directory for images"
 fi
@@ -91,7 +93,8 @@ fi
 if [ ! -d /var/cache/zoneminder/temp ]; then
 	echo "Create temp folder"
 	mkdir /var/cache/zoneminder/temp
-	chmod -R go+rw /var/cache/zoneminder/temp
+	chown root:www-data /var/cache/zoneminder/temp
+	chmod go+rw /var/cache/zoneminder/temp
 else
 	echo "Using existing data directory for temp"
 fi
