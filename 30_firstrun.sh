@@ -101,7 +101,6 @@ chown -R root:www-data /var/cache/zoneminder
 chmod -R go+rw /var/cache/zoneminder
 
 # Get docker env timezone and set system timezone
-export DEBCONF_NONINTERACTIVE_SEEN=true DEBIAN_FRONTEND=noninteractive
 echo "Setting the timezone to : $TZ"
 echo $TZ > /etc/timezone
 ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
