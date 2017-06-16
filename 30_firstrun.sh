@@ -57,6 +57,30 @@ ln -sf /config/zm.conf /etc/zm/
 rm -r /usr/share/zoneminder/www/skins
 ln -s /config/skins /usr/share/zoneminder/www/skins
 
+# Create event folder
+if [ ! -d /var/cache/zoneminder/events ]; then
+	echo "Create events folder"
+	mkdir /var/cache/zoneminder/events
+else
+	echo "Using existing data directory for events"
+fi
+
+# Create images folder
+if [ ! -d /var/cache/zoneminder/images ]; then
+	echo "Create images folder"
+	mkdir /var/cache/zoneminder/images
+else
+	echo "Using existing data directory for images"
+fi
+
+# Create temp folder
+if [ ! -d /var/cache/zoneminder/temp ]; then
+	echo "Create temp folder"
+	mkdir /var/cache/zoneminder/temp
+else
+	echo "Using existing data directory for temp"
+fi
+
 # Set ownership for unRAID
 PUID=${PUID:-99}
 PGID=${PGID:-100}
@@ -66,37 +90,15 @@ usermod -d /config nobody
 chown -R nobody:users /config
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
+
+# Set /config permissions
 chmod -R go+rw /config
-
-# Create event folder
-if [ ! -d /var/cache/zoneminder/events ]; then
-	echo "Create events folder"
-	mkdir /var/cache/zoneminder/events
-else
-	echo "Using existing data directory for events"
-fi
-chmod -R go+rw /var/cache/zoneminder/events
-
-# Create images folder
-if [ ! -d /var/cache/zoneminder/images ]; then
-	echo "Create images folder"
-	mkdir /var/cache/zoneminder/images
-else
-	echo "Using existing data directory for images"
-fi
-chmod -R go+rw /var/cache/zoneminder/images
-
-# Create temp folder
-if [ ! -d /var/cache/zoneminder/temp ]; then
-	echo "Create temp folder"
-	mkdir /var/cache/zoneminder/temp
-else
-	echo "Using existing data directory for temp"
-fi
-chmod -R go+rw /var/cache/zoneminder/temp
 
 # Set /var/cache/zoneminder ownership
 chown -R root:www-data /var/cache/zoneminder
+
+# Set /var/cache/zoneminder permissions
+chmod -R go+rw /var/cache/zoneminder
 
 # Get docker env timezone and set system timezone
 export DEBCONF_NONINTERACTIVE_SEEN=true DEBIAN_FRONTEND=noninteractive
