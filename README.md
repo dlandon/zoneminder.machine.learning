@@ -20,9 +20,6 @@ zoneminder
 
 Changes:
 
-2017-06-15
-- Correct permissions on /config/data/ folders in first run script.
-
 2017-05-28
 - Fix permissions on /config/data/ folders.
 

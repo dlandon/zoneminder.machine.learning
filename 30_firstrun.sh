@@ -68,7 +68,6 @@ chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
 chmod -R go+rw /config
 chown root:www-data /var/cache/zoneminder
-chmod go+rw /var/cache/zoneminder
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
