@@ -20,6 +20,9 @@ zoneminder
 
 Changes:
 
+2017-06-17
+- Fix permissions of /var/cache/zoneminder folder if not correct.
+
 2017-05-28
 - Fix permissions on /config/data/ folders.
 

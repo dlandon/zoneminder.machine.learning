@@ -99,6 +99,12 @@ else
 	echo "Using existing data directory for temp"
 fi
 
+# Check the permissions on the /var/cache/zoneminder directory
+if [ `stat -c '%a' /var/cache/zoneminder/events/` != '777' ]; then
+	echo "Correcting /var/cache/zoneminder perissions..."
+	chmod -R go+rw /var/cache/zoneminder
+fi
+
 # Get docker env timezone and set system timezone
 echo "Setting the timezone to : $TZ"
 echo $TZ > /etc/timezone
