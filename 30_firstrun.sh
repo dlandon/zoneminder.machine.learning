@@ -63,18 +63,15 @@ PGID=${PGID:-100}
 usermod -o -u $PUID nobody
 usermod -g $PGID nobody
 usermod -d /config nobody
-chown -R nobody:users /config
+ls -d /config/* | grep -v '/config/data' | xargs chown -R nobody:users
+ls -d /config/* | grep -v '/config/data' | xargs chmod -R go+rw
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
-chmod -R go+rw /config
-chown root:www-data /var/cache/zoneminder
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
 	echo "Create events folder"
 	mkdir /var/cache/zoneminder/events
-	chown root:www-data /var/cache/zoneminder/events
-	chmod go+rw /var/cache/zoneminder/events
 else
 	echo "Using existing data directory for events"
 fi
@@ -83,8 +80,6 @@ fi
 if [ ! -d /var/cache/zoneminder/images ]; then
 	echo "Create images folder"
 	mkdir /var/cache/zoneminder/images
-	chown root:www-data /var/cache/zoneminder/images
-	chmod go+rw /var/cache/zoneminder/images
 else
 	echo "Using existing data directory for images"
 fi
@@ -93,15 +88,19 @@ fi
 if [ ! -d /var/cache/zoneminder/temp ]; then
 	echo "Create temp folder"
 	mkdir /var/cache/zoneminder/temp
-	chown root:www-data /var/cache/zoneminder/temp
-	chmod go+rw /var/cache/zoneminder/temp
 else
 	echo "Using existing data directory for temp"
 fi
 
+# Check the ownership on the /var/cache/zoneminder directory
+if [ `stat -c '%U:%G' /var/cache/zoneminder` != 'root:www-data' ]; then
+	echo "Correcting /var/cache/zoneminder ownership..."
+	chown -R root:www-data /var/cache/zoneminder
+fi
+
 # Check the permissions on the /var/cache/zoneminder directory
 if [ `stat -c '%a' /var/cache/zoneminder/events/` != '777' ]; then
-	echo "Correcting /var/cache/zoneminder perissions..."
+	echo "Correcting /var/cache/zoneminder permissions..."
 	chmod -R go+rw /var/cache/zoneminder
 fi
 
