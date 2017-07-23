@@ -80,7 +80,6 @@ RUN \
 	rm /etc/apt/sources.list.d/iconnor-ubuntu-zoneminder-xenial.list && \
 	apt-get -y remove wget && \
 	update-rc.d -f zoneminder remove && \
-	update-rc.d -f apache2 remove && \
 	update-rc.d -f mysql remove && \
 	update-rc.d -f mysql-common remove
 

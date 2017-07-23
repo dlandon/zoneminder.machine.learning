@@ -19,6 +19,9 @@ docker run -d --name="Zoneminder" \
 zoneminder
 
 Changes:
+-2017-07-23
+- Allow apache to update.
+
 
 2017-06-17
 - Fix ownership and permissions of /var/cache/zoneminder folder if not correct.
