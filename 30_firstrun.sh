@@ -63,8 +63,8 @@ PGID=${PGID:-100}
 usermod -o -u $PUID nobody
 usermod -g $PGID nobody
 usermod -d /config nobody
-ls -d /config/* | grep -v '/config/data' | xargs chown -R nobody:users
-ls -d /config/* | grep -v '/config/data' | xargs chmod -R go+rw
+ls -d /config/* | grep '/config/data' | xargs chown -R nobody:users
+ls -d /config/* | grep '/config/data' | xargs chmod -R go+rw
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
 
