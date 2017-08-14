@@ -63,10 +63,23 @@ PGID=${PGID:-100}
 usermod -o -u $PUID nobody
 usermod -g $PGID nobody
 usermod -d /config nobody
-ls -d /config/* | grep '/config/data' | xargs chown -R nobody:users
-ls -d /config/* | grep '/config/data' | xargs chmod -R go+rw
+
+# Check the ownership on the /data directory
+if [ `stat -c '%U:%G' /config/data` != 'root:www-data' ]; then
+	echo "Correcting /config/data ownership..."
+#	chown -R root:www-data /config/data
+fi
+
+# Check the permissions on the /data directory
+if [ `stat -c '%a' /config/data` != '777' ]; then
+	echo "Correcting /config/data permissions..."
+#	chmod -R go+rw /config/data
+fi
+
+# Change some ownership and permissions
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
+chmod 666 /config/zm.conf
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
