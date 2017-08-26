@@ -20,6 +20,9 @@ zoneminder
 
 Changes:
 
+2017-08-26
+- Add appdata /control folder for PTZ scripts to be copied to the docker image.
+
 2017-08-14
 - More adjustments to fixing file permissions.
 

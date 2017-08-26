@@ -40,6 +40,16 @@ else
 	echo "Using existing skins directory"
 fi
 
+# Create Control folder if it doesn't exist and copy files into image
+if [ ! -d /config/control ]; then
+	echo "Creating control folder in config folder"
+	mkdir /config/control
+else
+	echo "Copy /config/control scripts to /usr/share/perl5/ZoneMinder/Control"
+	chmod 644 /config/control/*
+	cp /config/control/* /usr/share/perl5/ZoneMinder/Control 2> /dev/nul
+fi
+
 echo "Creating symbolink links"
 # ssmtp
 rm -r /etc/ssmtp
@@ -67,19 +77,21 @@ usermod -d /config nobody
 # Check the ownership on the /data directory
 if [ `stat -c '%U:%G' /config/data` != 'root:www-data' ]; then
 	echo "Correcting /config/data ownership..."
-#	chown -R root:www-data /config/data
+	chown -R root:www-data /config/data
 fi
 
 # Check the permissions on the /data directory
 if [ `stat -c '%a' /config/data` != '777' ]; then
 	echo "Correcting /config/data permissions..."
-#	chmod -R go+rw /config/data
+	chmod -R go+rw /config/data
 fi
 
 # Change some ownership and permissions
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
 chmod 666 /config/zm.conf
+chown $PUID:$PGID /config/control
+chmod 777 /config/control
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
