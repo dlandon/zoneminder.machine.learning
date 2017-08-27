@@ -80,7 +80,9 @@ RUN \
 	apt-get -y remove wget && \
 	update-rc.d -f zoneminder remove && \
 	update-rc.d -f mysql remove && \
-	update-rc.d -f mysql-common remove
+	update-rc.d -f mysql-common remove && \
+	apt-get clean -y && \
+	apt-get -y autoremove
 
 VOLUME \
 	["/config"] \

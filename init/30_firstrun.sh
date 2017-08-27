@@ -130,12 +130,14 @@ if [ `stat -c '%a' /var/cache/zoneminder/events/` != '777' ]; then
 fi
 
 # Get docker env timezone and set system timezone
-echo "Setting the timezone to : $TZ"
-echo $TZ > /etc/timezone
-ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
-dpkg-reconfigure tzdata
-echo "Date: `date`"
-sed -i "s|^date.timezone =.*$|date.timezone = ${TZ}|" /etc/php/7.0/apache2/php.ini
+if [[ $(cat /etc/timezone) != "$TZ" ]] ; then
+	echo "Setting the timezone to : $TZ"
+	echo $TZ > /etc/timezone
+	ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
+	dpkg-reconfigure tzdata
+	echo "Date: `date`"
+	sed -i "s|^date.timezone =.*$|date.timezone = ${TZ}|" /etc/php/7.0/apache2/php.ini
+fi
 
 # Fix memory issue
 echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/meminfo` bytes"
