@@ -45,9 +45,11 @@ if [ ! -d /config/control ]; then
 	echo "Creating control folder in config folder"
 	mkdir /config/control
 else
-	echo "Copy /config/control scripts to /usr/share/perl5/ZoneMinder/Control"
-	chmod 644 /config/control/*
-	cp /config/control/* /usr/share/perl5/ZoneMinder/Control 2> /dev/nul
+	if [ -f /config/control/* ]; then
+		echo "Copy /config/control scripts to /usr/share/perl5/ZoneMinder/Control"
+		chmod 644 /config/control/*
+		cp /config/control/* /usr/share/perl5/ZoneMinder/Control 2>/dev/null
+	fi
 fi
 
 echo "Creating symbolink links"
