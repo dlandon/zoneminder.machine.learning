@@ -20,6 +20,9 @@ zoneminder
 
 Changes:
 
+2017-09-15
+- Add php-curl package.
+
 2017-08-27
 - Timezone setting adjustment and some minor changes to docker build.
 
