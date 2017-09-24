@@ -20,6 +20,9 @@ zoneminder
 
 Changes:
 
+2017-09-24
+- Modifications to dockerfile for auto build.
+
 2017-09-15
 - Add php-curl package.
 
