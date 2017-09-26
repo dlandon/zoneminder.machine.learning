@@ -1,16 +1,8 @@
-FROM phusion/baseimage:0.9.22
+FROM dlandon/baseimage
 
 LABEL maintainer="dlandon"
 
-ENV DEBCONF_NONINTERACTIVE_SEEN="true" \
-	DEBIAN_FRONTEND="noninteractive" \
-	DISABLESSH="true" \
-	LC_ALL="C.UTF-8" \
-	LANG="en_US.UTF-8" \
-	LANGUAGE="en_US.UTF-8" \
-	SHMEM="50%" \
-	TZ="Etc/UTC" \
-	TERM="xterm"
+ENV SHMEM="50%"
 
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
@@ -84,5 +76,3 @@ VOLUME \
 	["/var/cache/zoneminder"]
 
 EXPOSE 80
-
-CMD ["/sbin/my_init"]
