@@ -18,6 +18,8 @@ docker run -d --name="Zoneminder" \
 -v "/mnt/cache/appdata/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder
 
+To access the Zoneminder gui: http://IP:8080/zm
+
 Changes:
 
 2017-09-26
