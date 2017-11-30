@@ -22,8 +22,11 @@ To access the Zoneminder gui: http://IP:8080/zm
 
 Changes:
 
+2017-11-30
+- Update base image.
+
 2017-09-26
-- Change to dlandon/baseimage.
+- Change to dlandon/baseimage - phusion 9.22.
 
 2017-09-24
 - Modifications to dockerfile for auto build.
@@ -35,7 +38,7 @@ Changes:
 - Timezone setting adjustment and some minor changes to docker build.
 
 2017-08-26
-- Add appdata /control folder for PTZ scripts to be copied to the docker image.
+- Add /config/control folder for PTZ scripts to be copied to the docker image.
 
 2017-08-14
 - More adjustments to fixing file permissions.
