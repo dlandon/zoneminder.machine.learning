@@ -22,6 +22,9 @@ To access the Zoneminder gui: http://IP:8080/zm
 
 Changes:
 
+2018-01-21
+- Add net-tools package.
+
 2017-11-30
 - Update base image.
 
