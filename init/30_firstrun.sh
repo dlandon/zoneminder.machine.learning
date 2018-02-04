@@ -28,6 +28,21 @@ else
 	echo "Using existing mysql database"
 fi
 
+# Move zmeventeventnotification if it doesn't exit
+if [ ! -d /config/zmeventnotification ]; then
+	echo "Moving zmeventnotification to config folder"
+	mkdir /config/zmeventnotification/
+	mv /root/zmeventnotification.pl /config/zmeventnotification/
+else
+	echo "Using existing zmeventnotification"
+fi
+
+# zmeventnotification
+cp /config/zmeventnotification/zmeventnotification.pl /usr/bin/zmeventnotification.pl
+chmod a+x /usr/bin/zmeventnotification.pl
+mkdir /etc/private
+chmod 777 /etc/private
+
 # Perl5 directory is no longer exposed at config.
 rm -r /config/perl5/ 2>/dev/null
 
@@ -93,7 +108,9 @@ chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
 chmod 666 /config/zm.conf
 chown $PUID:$PGID /config/control
-chmod 777 /config/control
+chmod -R 777 /config/control
+chown $PUID:$PGID /config/zmeventnotification
+chmod -R 777 /config/zmeventnotification
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then

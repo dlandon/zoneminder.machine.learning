@@ -10,6 +10,7 @@ docker run -d --name="Zoneminder" \
 --net="bridge" \
 --privileged="true" \
 -p 8080:80/tcp \
+-p 9000:9000/tcp \
 -e TZ="America/New_York" \
 -e SHMEM="50%" \
 -e PUID="99" \
@@ -20,7 +21,11 @@ zoneminder
 
 To access the Zoneminder gui: http://IP:8080/zm
 
+The zmNinja Event Notification Server is accessed at port 9000.  The event notification server script is located at /config/zmeventnotification/zmeventnotification.pl.  The initial installation does not use security.  You can generate a self signed certificate and configure the script to use security.  When the Zoneminder Docker is started the script is copied to the image and executed.
+
 Changes:
+2018-02-04
+- Add zmNinja Event Notification Server for zmNinja on iOS and Android devices.
 
 2018-01-21
 - Add net-tools package.

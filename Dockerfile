@@ -6,6 +6,7 @@ ENV SHMEM="50%"
 
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
+COPY zmeventnotification/ /root/
 
 RUN add-apt-repository -y ppa:iconnor/zoneminder && \
 	apt-get update && \
@@ -22,12 +23,16 @@ RUN	apt-get install -y wget && \
 	apt-get install -y libav-tools && \
 	apt-get install -y ssmtp mailutils php-curl net-tools && \
 	apt-get install -y zoneminder=1.30.4* php-gd && \
+	apt-get install -y libcrypt-mysql-perl libyaml-perl make libjson-perl && \
 	chmod 740 /etc/zm/zm.conf && \
 	chown root:www-data /etc/zm/zm.conf && \
 	adduser www-data video && \
 	a2enmod cgi && \
 	a2enconf zoneminder && \
 	a2enmod rewrite
+
+RUN	perl -MCPAN -e "force install Net::WebSocket::Server" && \
+	perl -MCPAN -e "force install LWP::Protocol::https"
 
 RUN	cd /root && \
 	wget www.andywilcock.com/code/cambozola/cambozola-latest.tar.gz && \
@@ -61,10 +66,12 @@ RUN	service mysql restart && \
 
 RUN	systemd-tmpfiles --create zoneminder.conf && \
 	chmod -R +x /etc/my_init.d/ && \
-	cp -p /etc/zm/zm.conf /root/zm.conf
+	cp -p /etc/zm/zm.conf /root/zm.conf && \
+	sed -i "/'zmupdate.pl',/a\ \ \ \ 'zmeventnotification.pl'," /usr/bin/zmdc.pl && \
+	sed -i '/runCommand( "zmdc.pl start zmfilter.pl" );/a\ \ \ \ \ \ \ \ runCommand( "zmdc.pl start zmeventnotification.pl" )\;' /usr/bin/zmpkg.pl
 
 RUN	rm /etc/apt/sources.list.d/iconnor-ubuntu-zoneminder-xenial.list && \
-	apt-get -y remove wget && \
+	apt-get -y remove wget make && \
 	update-rc.d -f zoneminder remove && \
 	update-rc.d -f mysql remove && \
 	update-rc.d -f mysql-common remove && \
