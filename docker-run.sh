@@ -4,6 +4,7 @@ docker run -d --name="Zoneminder" \
 --net="bridge" \
 --privileged="true" \
 -p 8080:80/tcp \
+-p 8443:443/tcp \
 -p 9000:9000/tcp \
 -e TZ="America/New_York" \
 -e SHMEM="50%" \

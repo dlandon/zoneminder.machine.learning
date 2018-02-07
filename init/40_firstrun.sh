@@ -149,5 +149,6 @@ service mysql start
 zmupdate.pl -nointeractive
 zmupdate.pl -f
 
+a2enmod ssl >/dev/null
 service apache2 start
 service zoneminder start
