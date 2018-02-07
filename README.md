@@ -22,7 +22,7 @@ zoneminder
 
 To access the Zoneminder gui: http://IP:8080/zm or https://IP:8443/zm
 
-The zmNinja Event Notification Server is accessed at port 9000.  The event notification server script is located at /config/zmeventnotification/zmeventnotification.pl.  The initial installation does not use security.  You can generate a self signed certificate and configure the script to use security.  When the Zoneminder Docker is started the script is copied to the image and executed.
+The zmNinja Event Notification Server is accessed at port 9000.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 Changes:
 2018-02-06
