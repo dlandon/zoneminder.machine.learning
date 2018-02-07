@@ -26,7 +26,7 @@ The zmNinja Event Notification Server is accessed at port 9000.  The event notif
 
 Changes:
 2018-02-06
-- Add access using https.  A self signed certificate is genereated and can be replaced if you want to supply your own certificate.
+- Add ssl certificate to zmNinja and apache for access using https.  A self signed certificate is genereated and can be replaced if you want to supply your own certificate.
 
 2018-02-04
 - Add zmNinja Event Notification Server for zmNinja on iOS and Android devices.
