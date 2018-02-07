@@ -3,6 +3,9 @@
 # 30_firstrun.sh
 #
 
+# make folders if required
+mkdir -p config/keys
+
 # Search for config files, if they don't exist, copy the default ones
 if [ ! -f /config/zm.conf ]; then
 	echo "Copying zm.conf"
@@ -28,23 +31,9 @@ else
 	echo "Using existing mysql database"
 fi
 
-# Move zmeventeventnotification if it doesn't exit
-if [ ! -d /config/zmeventnotification ]; then
-	echo "Moving zmeventnotification to config folder"
-	mkdir /config/zmeventnotification/
-	mv /root/zmeventnotification.pl /config/zmeventnotification/
-else
-	echo "Using existing zmeventnotification"
-fi
-
-# zmeventnotification
-cp /config/zmeventnotification/zmeventnotification.pl /usr/bin/zmeventnotification.pl
-chmod a+x /usr/bin/zmeventnotification.pl
-mkdir /etc/private
-chmod 777 /etc/private
-
-# Perl5 directory is no longer exposed at config.
-rm -r /config/perl5/ 2>/dev/null
+# directories no longer exposed at config.
+rm -rf /config/perl5/
+rm -rf /config/zmeventnotification/
 
 # Move skins folder if it doesn't exist
 if [ ! -d /config/skins ]; then
@@ -68,6 +57,12 @@ else
 fi
 
 echo "Creating symbolink links"
+# security certificate keys
+rm -rf /etc/apache2/ssl/zoneminder.crt
+ln -sf /config/keys/cert.crt /etc/apache2/ssl/zoneminder.crt
+rm -rf /etc/apache2/ssl/zoneminder.key
+ln -sf /config/keys/cert.key /etc/apache2/ssl/zoneminder.key
+
 # ssmtp
 rm -r /etc/ssmtp
 ln -s /config/ssmtp /etc/ssmtp
@@ -109,8 +104,6 @@ chown -R mysql:mysql /var/lib/mysql
 chmod 666 /config/zm.conf
 chown $PUID:$PGID /config/control
 chmod -R 777 /config/control
-chown $PUID:$PGID /config/zmeventnotification
-chmod -R 777 /config/zmeventnotification
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
@@ -159,5 +152,6 @@ service mysql start
 zmupdate.pl -nointeractive
 zmupdate.pl -f
 
+a2enmod ssl >/dev/null
 service apache2 start
 service zoneminder start

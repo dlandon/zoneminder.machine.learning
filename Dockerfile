@@ -6,7 +6,7 @@ ENV SHMEM="50%"
 
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
-COPY zmeventnotification/ /root/
+COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 
 RUN add-apt-repository -y ppa:iconnor/zoneminder && \
 	apt-get update && \
@@ -65,6 +65,11 @@ RUN	service mysql restart && \
 	apt-get clean
 
 RUN	systemd-tmpfiles --create zoneminder.conf && \
+	cp /root/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf && \
+	mkdir /etc/apache2/ssl/ && \
+	chmod a+x /usr/bin/zmeventnotification.pl && \
+	mkdir /etc/private && \
+	chmod 777 /etc/private && \
 	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf && \
 	sed -i "/'zmupdate.pl',/a\ \ \ \ 'zmeventnotification.pl'," /usr/bin/zmdc.pl && \
@@ -82,4 +87,4 @@ VOLUME \
 	["/config"] \
 	["/var/cache/zoneminder"]
 
-EXPOSE 80
+EXPOSE 80 443 9000
