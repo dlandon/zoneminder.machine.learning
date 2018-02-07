@@ -12,4 +12,4 @@ else
 fi
 
 chown root:root /config/keys
-chmod -R 666 /config/keys
+chmod -R 777 /config/keys
