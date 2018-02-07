@@ -10,3 +10,6 @@ else
 	mkdir -p config/keys
 	openssl req -new -x509 -days 3650 -nodes -out /config/keys/cert.crt -keyout /config/keys/cert.key -subj "/C=US/ST=NY/L=New York/O=Zoneminder/OU=Zoneminder/CN=*"
 fi
+
+chown root:root /config/keys
+chmod -R 777 /config/keys

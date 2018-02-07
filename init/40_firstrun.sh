@@ -101,7 +101,6 @@ chown -R mysql:mysql /var/lib/mysql
 chmod 666 /config/zm.conf
 chown $PUID:$PGID /config/control
 chmod -R 777 /config/control
-chmod -R 777 /config/keys
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
