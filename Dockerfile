@@ -2,7 +2,7 @@ FROM dlandon/baseimage
 
 LABEL maintainer="dlandon"
 
-ENV SHMEM="50%"
+ENV	SHMEM="50%"
 
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/

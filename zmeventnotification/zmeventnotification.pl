@@ -67,7 +67,7 @@ my $app_version="0.98.3";
 # ==========================================================================
 use constant EVENT_NOTIFICATION_PORT=>9000;                 # port for Websockets connection
 my $useSecure = 1;                                          # make this 0 if you don't want SSL
-my $noAuth = 0;                                              # make 1 to NOT check username/password against zoneminder Database
+my $noAuth = 0;                                             # make 1 to NOT check username/password against zoneminder Database
 
 # ignore if useSecure is 0
 use constant SSL_CERT_FILE=>'/etc/apache2/ssl/zoneminder.crt';      # Change these to your certs/keys
