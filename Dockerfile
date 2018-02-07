@@ -65,7 +65,6 @@ RUN	service mysql restart && \
 	apt-get clean
 
 RUN	systemd-tmpfiles --create zoneminder.conf && \
-	cp /root/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf && \
 	mkdir /etc/apache2/ssl/ && \
 	chmod a+x /usr/bin/zmeventnotification.pl && \
 	mkdir /etc/private && \
@@ -87,4 +86,4 @@ VOLUME \
 	["/config"] \
 	["/var/cache/zoneminder"]
 
-EXPOSE 80 443 9000
+EXPOSE 80 9000
