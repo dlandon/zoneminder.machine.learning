@@ -101,7 +101,6 @@ chown -R mysql:mysql /var/lib/mysql
 chmod 666 /config/zm.conf
 chown $PUID:$PGID /config/control
 chmod -R 777 /config/control
-chown $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
 
 # Create event folder
