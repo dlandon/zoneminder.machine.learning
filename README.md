@@ -14,6 +14,7 @@ docker run -d --name="Zoneminder" \
 -p 9000:9000/tcp \
 -e TZ="America/New_York" \
 -e SHMEM="50%" \
+-e SSL_EVENTS="1" \
 -e PUID="99" \
 -e PGID="100" \
 -v "/mnt/cache/appdata/Zoneminder":"/config":rw \
@@ -25,6 +26,9 @@ To access the Zoneminder gui: http://IP:8080/zm or https://IP:8443/zm
 The zmNinja Event Notification Server is accessed at port 9000.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 Changes:
+2018-02-08
+- Add SSL_EVENTS environment variable to enable/disable ssl on zmevent notifications.
+
 2018-02-06
 - Add ssl certificate to zmNinja and apache for access using https.  A self signed certificate is genereated and can be replaced if you want to supply your own certificate.
 

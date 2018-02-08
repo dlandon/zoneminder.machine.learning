@@ -138,6 +138,10 @@ if [ `stat -c '%a' /var/cache/zoneminder/events/` != '777' ]; then
 	chmod -R go+rw /var/cache/zoneminder
 fi
 
+# configure the zmeventnotification.pl script for ssl/no ssl
+SSL_EVENTS=${SSL_EVENTS:-1}
+sed -i "s|$useSecure = .;|$useSecure = ${SSL_EVENTS};|" /usr/bin/zmeventnotification.pl
+
 # Fix memory issue
 echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/meminfo` bytes"
 umount /dev/shm
