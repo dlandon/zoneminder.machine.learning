@@ -26,6 +26,9 @@ To access the Zoneminder gui: http://IP:8080/zm or https://IP:8443/zm
 The zmNinja Event Notification Server is accessed at port 9000.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 Changes:
+2018-02-15
+- Add user cron entries.  The cron entries in the /config/cron file will be entered into the root crontab.
+
 2018-02-08
 - Add SSL_EVENTS environment variable to enable/disable ssl on zmevent notifications.
 
