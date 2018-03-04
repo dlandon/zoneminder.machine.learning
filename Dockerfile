@@ -77,7 +77,8 @@ RUN	rm /etc/apt/sources.list.d/iconnor-ubuntu-zoneminder-xenial.list && \
 	update-rc.d -f mysql remove && \
 	update-rc.d -f mysql-common remove && \
 	apt-get -y clean && \
-	apt-get -y autoremove
+	apt-get -y autoremove && \
+	rm -rf /tmp/* /var/tmp/*
 
 VOLUME \
 	["/config"] \
