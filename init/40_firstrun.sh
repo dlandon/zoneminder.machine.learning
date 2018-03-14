@@ -83,24 +83,15 @@ usermod -o -u $PUID nobody
 usermod -g $PGID nobody
 usermod -d /config nobody
 
-# Check the ownership on the /data directory
-if [ `stat -c '%U:%G' /config/data` != 'root:www-data' ]; then
-	echo "Correcting /config/data ownership..."
-	chown -R root:www-data /config/data
-fi
-
-# Check the permissions on the /data directory
-if [ `stat -c '%a' /config/data` != '777' ]; then
-	echo "Correcting /config/data permissions..."
-	chmod -R go+rw /config/data
-fi
-
 # Change some ownership and permissions
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
+chown $PUID:$PGID /config/zm.conf
 chmod 666 /config/zm.conf
 chown $PUID:$PGID /config/control
 chmod -R 666 /config/control
+chown $PUID:$PGID /config/ssmtp
+chmod -R 666 /config/ssmtp
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
@@ -133,7 +124,7 @@ if [ `stat -c '%U:%G' /var/cache/zoneminder` != 'root:www-data' ]; then
 fi
 
 # Check the permissions on the /var/cache/zoneminder directory
-if [ `stat -c '%a' /var/cache/zoneminder/events/` != '777' ]; then
+if [ `stat -c '%a' /var/cache/zoneminder` != '777' ]; then
 	echo "Correcting /var/cache/zoneminder permissions..."
 	chmod -R go+rw /var/cache/zoneminder
 fi
