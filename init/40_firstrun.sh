@@ -48,6 +48,7 @@ if [ ! -d /config/control ]; then
 else
 	if [ -f /config/control/* ]; then
 		echo "Copy /config/control scripts to /usr/share/perl5/ZoneMinder/Control"
+		chown root:root /config/control/*
 		chmod 644 /config/control/*
 		cp /config/control/* /usr/share/perl5/ZoneMinder/Control 2>/dev/null
 	fi
@@ -88,10 +89,11 @@ chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
 chown $PUID:$PGID /config/zm.conf
 chmod 666 /config/zm.conf
-chown $PUID:$PGID /config/control
+chown -R $PUID:$PGID /config/control
 chmod -R 666 /config/control
-chown $PUID:$PGID /config/ssmtp
+chown -R $PUID:$PGID /config/ssmtp
 chmod -R 666 /config/ssmtp
+chown -R $PUID:$PGID /config/skins
 
 # Create event folder
 if [ ! -d /var/cache/zoneminder/events ]; then
