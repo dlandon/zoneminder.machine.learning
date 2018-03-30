@@ -1,6 +1,6 @@
-FROM dlandon/baseimage
+FROM sgarzarella/baseimage-armhf
 
-LABEL maintainer="dlandon"
+MAINTAINER Stefano <stefano.garzarella@gmail.com>
 
 ENV	PHP_VERS="7.1"
 ENV ZM_VERS="1.32"
