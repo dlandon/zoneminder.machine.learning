@@ -95,13 +95,19 @@ chown -R $PUID:$PGID /config/ssmtp
 chmod -R 666 /config/ssmtp
 chown -R $PUID:$PGID /config/skins
 
-# Create event folder
+# Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
 	echo "Create events folder"
 	mkdir /var/cache/zoneminder/events
 	chmod go+rw /var/cache/zoneminder/events
 else
 	echo "Using existing data directory for events"
+fi
+
+# Check the ownership on the /var/cache/zoneminder/events directory
+if [ `stat -c '%U:%G' /var/cache/zoneminder/events` != 'root:www-data' ]; then
+	echo "Correcting /var/cache/zoneminder/events ownership..."
+	chown -R root:www-data /var/cache/zoneminder/events
 fi
 
 # Create images folder
@@ -113,6 +119,12 @@ else
 	echo "Using existing data directory for images"
 fi
 
+# Check the ownership on the /var/cache/zoneminder/images directory
+if [ `stat -c '%U:%G' /var/cache/zoneminder/images` != 'root:www-data' ]; then
+	echo "Correcting /var/cache/zoneminder/images ownership..."
+	chown -R root:www-data /var/cache/zoneminder/images
+fi
+
 # Create temp folder
 if [ ! -d /var/cache/zoneminder/temp ]; then
 	echo "Create temp folder"
@@ -122,10 +134,10 @@ else
 	echo "Using existing data directory for temp"
 fi
 
-# Check the ownership on the /var/cache/zoneminder directory
-if [ `stat -c '%U:%G' /var/cache/zoneminder` != 'root:www-data' ]; then
-	echo "Correcting /var/cache/zoneminder ownership..."
-	chown -R root:www-data /var/cache/zoneminder
+# Check the ownership on the /var/cache/zoneminder/temp directory
+if [ `stat -c '%U:%G' /var/cache/zoneminder/temp` != 'root:www-data' ]; then
+	echo "Correcting /var/cache/zoneminder/temp ownership..."
+	chown -R root:www-data /var/cache/zoneminder/temp
 fi
 
 # Check the permissions on the /var/cache/zoneminder directory

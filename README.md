@@ -29,6 +29,7 @@ Changes:
 
 2018-03-31
 - Set proper permissions when creating events/, images/, and temp/ directories.
+- Adjust correcting of events/, images/, and temp/ diectory ownerships.
 
 2018-03-14
 - Fix data directory ownership and permissions corrections.
