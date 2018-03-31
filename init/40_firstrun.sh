@@ -99,6 +99,7 @@ chown -R $PUID:$PGID /config/skins
 if [ ! -d /var/cache/zoneminder/events ]; then
 	echo "Create events folder"
 	mkdir /var/cache/zoneminder/events
+	chmod go+rw /var/cache/zoneminder/events
 else
 	echo "Using existing data directory for events"
 fi
@@ -107,6 +108,7 @@ fi
 if [ ! -d /var/cache/zoneminder/images ]; then
 	echo "Create images folder"
 	mkdir /var/cache/zoneminder/images
+	chmod go+rw /var/cache/zoneminder/images
 else
 	echo "Using existing data directory for images"
 fi
@@ -115,6 +117,7 @@ fi
 if [ ! -d /var/cache/zoneminder/temp ]; then
 	echo "Create temp folder"
 	mkdir /var/cache/zoneminder/temp
+	chmod go+rw /var/cache/zoneminder/temp
 else
 	echo "Using existing data directory for temp"
 fi
