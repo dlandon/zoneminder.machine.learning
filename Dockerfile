@@ -3,13 +3,13 @@ FROM dlandon/baseimage
 LABEL maintainer="dlandon"
 
 ENV	SHMEM="50%" \
-	SSL_EVENTS="1" \
 	PUID="99" \
 	PGID="100"
 
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
 COPY zmeventnotification/zmeventnotification.pl /usr/bin/
+COPY zmeventnotification/zmeventnotification.ini /root/
 
 RUN add-apt-repository -y ppa:iconnor/zoneminder && \
 	apt-get update && \
@@ -33,7 +33,8 @@ RUN	rm /etc/mysql/my.cnf && \
 	a2enconf zoneminder && \
 	a2enmod rewrite && \
 	perl -MCPAN -e "force install Net::WebSocket::Server" && \
-	perl -MCPAN -e "force install LWP::Protocol::https"
+	perl -MCPAN -e "force install LWP::Protocol::https" && \
+	perl -MCPAN -e "force install Config::IniFiles"
 
 RUN	cd /root && \
 	wget www.andywilcock.com/code/cambozola/cambozola-latest.tar.gz && \

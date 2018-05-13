@@ -10,6 +10,13 @@ if [ ! -f /config/zm.conf ]; then
 else
 	echo "File zm.conf already exists"
 fi
+if [ ! -f /config/zmeventnotification.ini ]; then
+	echo "Copying zmeventnotification.ini"
+	cp /root/zmeventnotification.ini /config/zmeventnotification.ini
+else
+	echo "File zmeventnotification.ini already exists"
+fi
+
 
 # Move ssmtp configuration if it doesn't exist
 if [ ! -d /config/ssmtp ]; then
@@ -167,9 +174,8 @@ if [ -f /config/cron ]; then
 	crontab -l -u root | cat - /config/cron | crontab -u root -
 fi
 
-# configure the zmeventnotification.pl script for ssl/no ssl
-SSL_EVENTS=${SSL_EVENTS:-1}
-sed -i "s|$useSecure = .;|$useSecure = ${SSL_EVENTS};|" /usr/bin/zmeventnotification.pl
+# copy the zmeventnotification.ini file to /etc
+cp /config/zmeventnotification.ini /etc/
 
 # Fix memory issue
 echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/meminfo` bytes"
