@@ -30,6 +30,7 @@ Changes:
 - Update zmNinja Event Notification Server to version 1.0.
 - Remove SSL_EVENTS environment variable.
 - Put zmeventnotifications.ini in /config/ directory to configure the zmNinja Event Notification Server.
+- Fix error when copying multiple control script files.
 
 2018-03-31
 - Set proper permissions when creating events/, images/, and temp/ directories.
