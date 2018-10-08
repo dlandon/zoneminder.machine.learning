@@ -10,13 +10,13 @@ if [ ! -f /config/zm.conf ]; then
 else
 	echo "File zm.conf already exists"
 fi
-
-if [ -f /root/zmeventnotification.ini ]; then
-	echo "Moving zmeventnotification.ini"
-	mv /root/zmeventnotification.ini /config/zmeventnotification.ini
+if [ ! -f /config/zmeventnotification.ini ]; then
+	echo "Copying zmeventnotification.ini"
+	cp /root/zmeventnotification.ini /config/zmeventnotification.ini
 else
-	echo "File zmnotification.ini already moved"
+	echo "File zmeventnotification.ini already exists"
 fi
+
 
 # Move ssmtp configuration if it doesn't exist
 if [ ! -d /config/ssmtp ]; then
@@ -35,10 +35,9 @@ else
 	echo "Using existing mysql database"
 fi
 
-# files and directories no longer exposed at config.
+# directories no longer exposed at config.
 rm -rf /config/perl5/
 rm -rf /config/zmeventnotification/
-rm -rf /config/zmeventnotification.pl
 
 # Move skins folder if it doesn't exist
 if [ ! -d /config/skins ]; then
@@ -100,7 +99,6 @@ chmod -R 666 /config/control
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 666 /config/ssmtp
 chown -R $PUID:$PGID /config/skins
-chown -R $PUID:$PGID /config/zmeventnotification.ini
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
@@ -188,5 +186,6 @@ service mysql start
 zmupdate.pl -nointeractive
 zmupdate.pl -f
 
+a2enmod ssl >/dev/null
 service apache2 start
 service zoneminder start
