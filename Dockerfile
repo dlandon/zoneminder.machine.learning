@@ -2,7 +2,6 @@ FROM dlandon/baseimage
 
 LABEL maintainer="dlandon"
 
-ENV	PHP_VERS="7.0"
 ENV	SHMEM="50%" \
 	PUID="99" \
 	PGID="100"
@@ -12,30 +11,25 @@ COPY defaults/ /root/
 COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 COPY zmeventnotification/zmeventnotification.ini /root/
 
-RUN add-apt-repository -y ppa:iconnor/zoneminder-1.30 && \
-	add-apt-repository ppa:ondrej/php && \
+RUN add-apt-repository -y ppa:iconnor/zoneminder && \
 	apt-get update && \
-	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \
-	apt-get -y dist-upgrade && \
-	apt-get -y install php$PHP_VERS mariadb-server && \
-	apt-get -y install wget sudo && \
-	apt-get -y install cakephp && \
-	apt-get -y install libav-tools && \
-	apt-get -y install apache2 ssmtp mailutils net-tools && \
-	apt-get -y install php$PHP_VERS-common php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl php$PHP_VERS-ldap && \
-	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mcrypt php$PHP_VERS-mysql php$PHP_VERS-opcache php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu && \
-	apt-get -y install zoneminder=1.30.4* && \
-	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl
+	apt-get upgrade -y -o Dpkg::Options::="--force-confold" && \
+	apt-get dist-upgrade -y && \
+	apt-get install -y mariadb-server && \
+	apt-get install -y wget && \
+	apt-get install -y sudo && \
+	apt-get install -y cakephp && \
+	apt-get install -y libav-tools && \
+	apt-get install -y ssmtp mailutils php-curl net-tools && \
+	apt-get install -y zoneminder=1.30.4* php-gd && \
+	apt-get install -y libcrypt-mysql-perl libyaml-perl make libjson-perl
 
-RUN	echo "extension=apcu.so" > /etc/php/$PHP_VERS/mods-available/apcu.ini && \
-	rm /etc/mysql/my.cnf && \
+RUN	rm /etc/mysql/my.cnf && \
 	cp /etc/mysql/mariadb.conf.d/50-server.cnf /etc/mysql/my.cnf && \
 	chmod 740 /etc/zm/zm.conf && \
 	chown root:www-data /etc/zm/zm.conf && \
 	adduser www-data video && \
 	a2enmod cgi && \
-	a2enmod ssl && \
-	a2enmod php$PHP_VERS && \
 	a2enconf zoneminder && \
 	a2enmod rewrite && \
 	perl -MCPAN -e "force install Net::WebSocket::Server" && \
@@ -51,7 +45,7 @@ RUN	cd /root && \
 	chmod 775 /usr/share/zoneminder/www/cambozola.jar && \
 	chown -R www-data:www-data /usr/share/zoneminder/ && \
 	echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
-	sed -i "s|^;date.timezone =.*|date.timezone = ${TZ}|" /etc/php/$PHP_VERS/apache2/php.ini && \
+	sed -i "s|^;date.timezone =.*|date.timezone = ${TZ}|" /etc/php/7.0/apache2/php.ini && \
 	sed -i "s|^start() {$|start() {\n        sleep 15|" /etc/init.d/zoneminder && \
 	service mysql start && \
 	mysql -uroot < /usr/share/zoneminder/db/zm_create.sql && \
@@ -78,7 +72,8 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	sed -i "/'zmupdate.pl',/a\ \ \ \ 'zmeventnotification.pl'," /usr/bin/zmdc.pl && \
 	sed -i '/runCommand( "zmdc.pl start zmfilter.pl" );/a\ \ \ \ \ \ \ \ runCommand( "zmdc.pl start zmeventnotification.pl" )\;' /usr/bin/zmpkg.pl
 
-RUN	apt-get -y remove wget make && \
+RUN	rm /etc/apt/sources.list.d/iconnor-ubuntu-zoneminder-xenial.list && \
+	apt-get -y remove wget make && \
 	update-rc.d -f zoneminder remove && \
 	update-rc.d -f mysql remove && \
 	update-rc.d -f mysql-common remove && \
