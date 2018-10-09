@@ -2,7 +2,7 @@ FROM dlandon/baseimage
 
 LABEL maintainer="dlandon"
 
-ENV	PHP_VERS="7.1"
+ENV	PHP_VERS="7.0"
 ENV	SHMEM="50%" \
 	PUID="99" \
 	PGID="100"
