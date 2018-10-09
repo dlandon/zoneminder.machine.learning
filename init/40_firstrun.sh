@@ -10,13 +10,13 @@ if [ ! -f /config/zm.conf ]; then
 else
 	echo "File zm.conf already exists"
 fi
-if [ ! -f /config/zmeventnotification.ini ]; then
-	echo "Copying zmeventnotification.ini"
-	cp /root/zmeventnotification.ini /config/zmeventnotification.ini
-else
-	echo "File zmeventnotification.ini already exists"
-fi
 
+if [ -f /root/zmeventnotification.ini ]; then
+	echo "Moving zmeventnotification.ini"
+	mv /root/zmeventnotification.ini /config/zmeventnotification.ini
+else
+	echo "File zmnotification.ini already moved"
+fi
 
 # Move ssmtp configuration if it doesn't exist
 if [ ! -d /config/ssmtp ]; then
@@ -35,18 +35,11 @@ else
 	echo "Using existing mysql database"
 fi
 
-# directories no longer exposed at config.
+# files and directories no longer exposed at config.
 rm -rf /config/perl5/
 rm -rf /config/zmeventnotification/
-
-# Move skins folder if it doesn't exist
-if [ ! -d /config/skins ]; then
-	echo "Moving skins folder to config folder"
-	mkdir /config/skins
-	cp -R -p /usr/share/zoneminder/www/skins /config/
-else
-	echo "Using existing skins directory"
-fi
+rm -rf /config/zmeventnotification.pl
+rm -rf /config/skins/
 
 # Create Control folder if it doesn't exist and copy files into image
 if [ ! -d /config/control ]; then
@@ -78,10 +71,6 @@ ln -s /config/mysql /var/lib/mysql
 rm -r /etc/zm/zm.conf
 ln -sf /config/zm.conf /etc/zm/
 
-# skins
-rm -r /usr/share/zoneminder/www/skins
-ln -s /config/skins /usr/share/zoneminder/www/skins
-
 # Set ownership for unRAID
 PUID=${PUID:-99}
 PGID=${PGID:-100}
@@ -98,7 +87,7 @@ chown -R $PUID:$PGID /config/control
 chmod -R 666 /config/control
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 666 /config/ssmtp
-chown -R $PUID:$PGID /config/skins
+chown -R $PUID:$PGID /config/zmeventnotification.ini
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
@@ -186,6 +175,5 @@ service mysql start
 zmupdate.pl -nointeractive
 zmupdate.pl -f
 
-a2enmod ssl >/dev/null
 service apache2 start
 service zoneminder start

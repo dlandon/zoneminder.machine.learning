@@ -51,7 +51,7 @@ use bytes;
 # ==========================================================================
 
 
-my $app_version="1.0";
+my $app_version="1.6";
 
 # ==========================================================================
 #
@@ -67,9 +67,12 @@ my $app_version="1.0";
 use constant DEFAULT_CONFIG_FILE => "/etc/zmeventnotification.ini";
 
 use constant DEFAULT_PORT => 9000;
+use constant DEFAULT_ADDRESS => '[::]';
 use constant DEFAULT_AUTH_ENABLE => 1;
 use constant DEFAULT_AUTH_TIMEOUT => 20;
 use constant DEFAULT_FCM_ENABLE => 1;
+use constant DEFAULT_MQTT_ENABLE => 0;
+use constant DEFAULT_MQTT_SERVER => '127.0.0.1';
 use constant DEFAULT_FCM_TOKEN_FILE => '/etc/private/tokens.txt';
 use constant DEFAULT_SSL_ENABLE => 1;
 
@@ -79,6 +82,8 @@ use constant DEFAULT_CUSTOMIZE_MONITOR_RELOAD_INTERVAL => 300;
 use constant DEFAULT_CUSTOMIZE_READ_ALARM_CAUSE => 0;
 use constant DEFAULT_CUSTOMIZE_TAG_ALARM_EVENT_ID => 0;
 use constant DEFAULT_CUSTOMIZE_USE_CUSTOM_NOTIFICATION_SOUND => 0;
+use constant DEFAULT_CUSTOMIZE_USE_HOOK_DESCRIPTION => 0;
+
 
 
 # Declare options.
@@ -90,9 +95,15 @@ my $config_file_present;
 my $check_config;
 
 my $port;
+my $address;
 
 my $auth_enabled;
 my $auth_timeout;
+
+my $use_mqtt;
+my $mqtt_server; 
+my $mqtt_username;
+my $mqtt_password;
 
 my $use_fcm;
 my $fcm_api_key;
@@ -109,14 +120,19 @@ my $read_alarm_cause;
 my $tag_alarm_event_id;
 my $use_custom_notification_sound;
 
+my $hook;
+my $use_hook_description;
+
 #default key. Please don't change this
 use constant NINJA_API_KEY => "AAAApYcZ0mA:APA91bG71SfBuYIaWHJorjmBQB3cAN7OMT7bAxKuV3ByJ4JiIGumG6cQw0Bo6_fHGaWoo4Bl-SlCdxbivTv5Z-2XPf0m86wsebNIG15pyUHojzmRvJKySNwfAHs7sprTGsA_SIR_H43h";
 
 my $dummyEventTest = 0; # if on, will generate dummy events. Not in config for a reason. Only dev testing
-my $dummyEventInterval = 30; # timespan to generate events in seconds
+my $dummyEventInterval = 20; # timespan to generate events in seconds
 my $dummyEventTimeLastSent = time();
 
-# This part makes sure we have the right deps
+
+# This part makes sure we have the right core deps. See later for optional deps
+
 if (!try_use ("Net::WebSocket::Server")) {Fatal ("Net::WebSocket::Server missing");}
 if (!try_use ("IO::Socket::SSL")) {Fatal ("IO::Socket::SSL missing");}
 if (!try_use ("Config::IniFiles")) {Fatal ("Config::Inifiles missing");}
@@ -125,12 +141,8 @@ if (!try_use ("File::Basename")) {Fatal ("File::Basename missing");}
 if (!try_use ("File::Spec")) {Fatal ("File::Spec missing");}
 if (!try_use ("Crypt::MySQL qw(password password41)")) {Fatal ("Crypt::MySQL  missing");}
 
-if (!try_use ("JSON")) 
-{ 
-    if (!try_use ("JSON::XS")) 
-    { Fatal ("JSON or JSON::XS  missing");exit (-1);}
-}
-# Fetch whatever options are available from CLI arguments.
+#if (!try_use ("threads")) {Fatal ("threads library/support  missing");}
+
 
 use constant USAGE => <<'USAGE';
 
@@ -144,12 +156,18 @@ Usage: zmeventnotification.pl [OPTION]...
   --check-config                      Print configuration and exit.
 
   --port=PORT                         Port for Websockets connection (default: 9000).
+  --address=ADDRESS                   Address for Websockets server (default: [::]).
 
   --enable-auth                       Check username/password against ZoneMinder database (default: true).
   --no-enable-auth                    Don't check username/password against ZoneMinder database (default: false).
 
   --enable-fcm                        Use FCM for messaging (default: true).
   --no-enable-fcm                     Don't use FCM for messaging (default: false).
+  --enable-mqtt                       Use MQTT for messaging (default: false).
+  --mqtt-server=SERVER                MQTT messaging server (default: 127.0.0.1). 
+  --mqtt-username=USERNAME            MQTT username (default: unset)
+  --mqtt-password=PASSWORD            MQTT password (default: unset)   
+  --no-enable-mqtt                    Disable MQTT for messaging (default: true).
   --fcm-api-key=KEY                   API key for FCM (default: zmNinja FCM key).
   --token-file=FILE                   Auth token store location (default: /etc/private/tokens.txt).
 
@@ -169,6 +187,10 @@ Usage: zmeventnotification.pl [OPTION]...
   --use-custom-notification-sound     Use custom notification sound (default: true).
   --no-use-custom-notification-sound  Don't use custom notification sound (default: false).
 
+  --hook=FILE                         Intercept events before they are reported to do custom processing.
+  --use-hook-description              Overwrite alarm text with content returned by hook script (default: true).
+  --no-use-hook-description           Do not overwrite alarm text with content returned by hook script (default: false).
+
 USAGE
 
 GetOptions(
@@ -178,8 +200,14 @@ GetOptions(
   "check-config"                   => \$check_config,
 
   "port=i"                         => \$port,
+  "address=s"                      => \$address,
 
   "enable-auth!"                   => \$auth_enabled,
+  
+  "enable-mqtt!"                    => \$use_mqtt,
+  "mqtt-server=s"                  => \$mqtt_server,
+  "mqtt-username=s"                  => \$mqtt_username,
+  "mqtt-password=s"                  => \$mqtt_password,
 
   "enable-fcm!"                    => \$use_fcm,
   "fcm-api-key=s"                  => \$fcm_api_key,
@@ -194,7 +222,10 @@ GetOptions(
   "monitor-reload-interval=i"      => \$monitor_reload_interval,
   "read-alarm-cause!"              => \$read_alarm_cause,
   "tag-alarm-event-id!"            => \$tag_alarm_event_id,
-  "use-custom-notification-sound!" => \$use_custom_notification_sound
+  "use-custom-notification-sound!" => \$use_custom_notification_sound,
+
+  "hook=s"                         => \$hook,
+  "use-hook-description!"          => \$use_hook_description
 );
 
 exit(print(USAGE)) if $help;
@@ -236,9 +267,15 @@ if ($config_file_present) {
 
 
 $port //= config_get_val($config, "network", "port", DEFAULT_PORT);
+$address //= config_get_val($config, "network", "address", DEFAULT_ADDRESS);
 
 $auth_enabled //= config_get_val($config, "auth", "enable",  DEFAULT_AUTH_ENABLE);
 $auth_timeout //= config_get_val($config, "auth", "timeout", DEFAULT_AUTH_TIMEOUT);
+
+$use_mqtt    //= config_get_val($config, "mqtt", "enable",     DEFAULT_MQTT_ENABLE);
+$mqtt_server  //= config_get_val($config, "mqtt", "server",    DEFAULT_MQTT_SERVER);
+$mqtt_username //= config_get_val($config, "mqtt", "username");
+$mqtt_password //= config_get_val($config, "mqtt", "password");
 
 $use_fcm     //= config_get_val($config, "fcm", "enable",     DEFAULT_FCM_ENABLE);
 $fcm_api_key //= config_get_val($config, "fcm", "api_key", NINJA_API_KEY);
@@ -248,12 +285,15 @@ $ssl_enabled   //= config_get_val($config, "ssl", "enable", DEFAULT_SSL_ENABLE);
 $ssl_cert_file //= config_get_val($config, "ssl", "cert");
 $ssl_key_file  //= config_get_val($config, "ssl", "key");
 
-$verbose                       //= config_get_val($config, "customize", "verbose",                       DEFAULT_CUSTOMIZE_VERBOSE);
-$event_check_interval          //= config_get_val($config, "customize", "event_check_interval",          DEFAULT_CUSTOMIZE_EVENT_CHECK_INTERVAL);
-$monitor_reload_interval       //= config_get_val($config, "customize", "monitor_reload_interval",       DEFAULT_CUSTOMIZE_MONITOR_RELOAD_INTERVAL);
-$read_alarm_cause              //= config_get_val($config, "customize", "read_alarm_cause",              DEFAULT_CUSTOMIZE_READ_ALARM_CAUSE);
-$tag_alarm_event_id            //= config_get_val($config, "customize", "tag_alarm_event_id",            DEFAULT_CUSTOMIZE_TAG_ALARM_EVENT_ID);
-$use_custom_notification_sound //= config_get_val($config, "customize", "use_custom_notification_sound", DEFAULT_CUSTOMIZE_USE_CUSTOM_NOTIFICATION_SOUND);
+$verbose                       //= config_get_val($config, "customize", "verbose", DEFAULT_CUSTOMIZE_VERBOSE);
+$event_check_interval          //= config_get_val($config, "customize", "event_check_interval", DEFAULT_CUSTOMIZE_EVENT_CHECK_INTERVAL);
+$monitor_reload_interval       //= config_get_val($config, "customize", "monitor_reload_interval", DEFAULT_CUSTOMIZE_MONITOR_RELOAD_INTERVAL);
+$read_alarm_cause              //= config_get_val($config, "customize", "read_alarm_cause", DEFAULT_CUSTOMIZE_READ_ALARM_CAUSE);
+$tag_alarm_event_id            //= config_get_val($config, "customize", "tag_alarm_event_id", DEFAULT_CUSTOMIZE_TAG_ALARM_EVENT_ID);
+$use_custom_notification_sound //= config_get_val($config, "customize", "use_custom_notification_sound",DEFAULT_CUSTOMIZE_USE_CUSTOM_NOTIFICATION_SOUND);
+
+$hook                         //= config_get_val($config, "customize", "hook");
+$use_hook_description         //= config_get_val($config, "customize", "use_hook_description", DEFAULT_CUSTOMIZE_USE_HOOK_DESCRIPTION);
 
 my %ssl_push_opts = ();
 
@@ -267,6 +307,7 @@ use constant PENDING_WEBSOCKET => '1';
 use constant INVALID_WEBSOCKET => '-1';
 use constant INVALID_APNS      => '-2';
 use constant INVALID_AUTH      => '-3';
+use constant INVALID_REMOTE    => '-4';
 use constant VALID_WEBSOCKET   => '0';
 
 # this is just a wrapper around Config::IniFiles val
@@ -277,6 +318,7 @@ sub config_get_val {
     return defined($val)? $val:$def;
 }
 
+# helper routines to print config status in help
 sub true_or_false {
   return $_[0] ? "true" : "false";
 }
@@ -284,6 +326,7 @@ sub true_or_false {
 sub value_or_undefined {
   return $_[0] || "(undefined)";
 }
+
 
 sub present_or_not {
   return $_[0] ? "(defined)" : "(undefined)";
@@ -301,6 +344,7 @@ ${\(
 )}:
 
 Port .......................... ${\(value_or_undefined($port))}
+Address ....................... ${\(value_or_undefined($address))}
 Event check interval .......... ${\(value_or_undefined($event_check_interval))}
 Monitor reload interval ....... ${\(value_or_undefined($monitor_reload_interval))}
 
@@ -311,6 +355,11 @@ Use FCM ....................... ${\(true_or_false($use_fcm))}
 FCM API key ................... ${\(present_or_not($fcm_api_key))}
 Token file .................... ${\(value_or_undefined($token_file))}
 
+Use MQTT .......................${\(true_or_false($use_mqtt))}
+MQTT Server ....................${\(value_or_undefined($mqtt_server))}
+MQTT Username ..................${\(value_or_undefined($mqtt_username))}
+MQTT Password ..................${\(present_or_not($mqtt_password))}
+
 SSL enabled ................... ${\(true_or_false($ssl_enabled))}
 SSL cert file ................. ${\(value_or_undefined($ssl_cert_file))}
 SSL key file .................. ${\(value_or_undefined($ssl_key_file))}
@@ -320,6 +369,9 @@ Read alarm cause .............. ${\(true_or_false($read_alarm_cause))}
 Tag alarm event id ............ ${\(true_or_false($tag_alarm_event_id))}
 Use custom notification sound . ${\(true_or_false($use_custom_notification_sound))}
 
+Hook .......................... ${\(value_or_undefined($hook))}
+Use Hook Description........... ${\(true_or_false($use_hook_description))}
+
 EOF
   )
 }
@@ -328,13 +380,20 @@ exit(print_config()) if $check_config;
 print_config() if $verbose;
 
  
+# Lets now load all the optional dependent libraries in a failsafe way
 
-# Lets now load all the dependent libraries in a failsafe way
+if (!try_use ("JSON")) 
+{ 
+    if (!try_use ("JSON::XS")) 
+    { Fatal ("JSON or JSON::XS  missing");exit (-1);}
+}
+# Fetch whatever options are available from CLI arguments.
+
 if ($use_fcm)
 {
     if (!try_use ("LWP::UserAgent") || !try_use ("URI::URL") || !try_use("LWP::Protocol::https"))
     {
-        Fatal ("PushProxy mode needs LWP::Protocol::https, LWP::UserAgent and URI::URL perl packages installed");
+        Fatal ("FCM push mode needs LWP::Protocol::https, LWP::UserAgent and URI::URL perl packages installed");
     }
     else
     {
@@ -345,6 +404,21 @@ if ($use_fcm)
 else
 {
     Info ("FCM disabled. Will only send out websocket notifications");
+}
+
+if ($use_mqtt)
+{
+    if (!try_use ("Net::MQTT::Simple")) {Fatal ("Net::MQTT::Simple  missing");exit (-1);}
+    if (defined $mqtt_username)
+    {
+        if (!try_use ("Net::MQTT::Simple::Auth")) {Fatal ("Net::MQTT::Simple::Auth  missing");exit (-1);}
+    }
+    Info ("Broadcasting Events to MQTT");
+
+}
+else 
+{
+    Info ("MQTT Disabled");
 }
 
 # ==========================================================================
@@ -358,7 +432,7 @@ use ZoneMinder;
 use POSIX;
 use DBI;
 
-
+#$SIG{CHLD}='IGNORE';
 $| = 1;
 
 $ENV{PATH}  = '/bin:/usr/bin';
@@ -383,16 +457,16 @@ my $proxy_reach_time=0;
 my $wss;
 my @events=();
 my @active_connections=();
+my $alarm_monitor_name="";
 my $alarm_header="";
 my $alarm_mid="";
 my $alarm_eid="";
+my $needsReload = 0;
 
-# MAIN
-
+# Main entry point
 
 printdbg ("******You are running version: $app_version");
-
-printdbg("WARNING: SSL is disabled, which means all traffic will be unencrypted!") unless $ssl_enabled;
+printdbg ("WARNING: SSL is disabled, which means all traffic will be unencrypted!") unless $ssl_enabled;
 
 if ($use_fcm)
 {
@@ -400,10 +474,13 @@ if ($use_fcm)
     if ( ! -d $dir)
     {
 
-        Info ("Creating $dir to store APNS tokens");
+        Info ("Creating $dir to store FCM tokens");
         mkdir $dir;
     }
 }
+
+
+
 
 Info( "Event Notification daemon v $app_version starting\n" );
 loadTokens();
@@ -438,7 +515,7 @@ sub checkEvents()
 {
     
     my $eventFound = 0;
-    if ( (time() - $monitor_reload_time) > $monitor_reload_interval )
+    if ( $needsReload || ((time() - $monitor_reload_time) > $monitor_reload_interval ))
     {
         my $len = scalar @active_connections;
         Info ("Total event client connections: ".$len."\n");
@@ -461,6 +538,7 @@ sub checkEvents()
             zmMemInvalidate( $monitor );
         }
         loadMonitors();
+        $needsReload = 0;
     }
     @events = ();
     $alarm_header = "";
@@ -469,7 +547,14 @@ sub checkEvents()
     foreach my $monitor ( values(%monitors) )
     { 
          my $alarm_cause="";
-        
+
+         if (  !zmMemVerify($monitor) ) {
+          # Our attempt to verify the memory handle failed. We should reload the monitors.
+          # Don't need to zmMemInvalidate because the monitor reload will do it.
+          $needsReload = 1;
+          Error ("** Memory verify failed for ".$monitor->{Name}."(id:".$monitor->{Id}. ") so forcing reload");
+          next;
+          }
          my ( $state, $last_event, $trigger_cause, $trigger_text)
             = zmMemRead( $monitor,
                  [ "shared_data:state",
@@ -504,6 +589,7 @@ sub checkEvents()
                 $alarm_mid = $alarm_mid.$mid.",";
                 $alarm_header = $alarm_header . " (".$last_event.") " if ($tag_alarm_event_id);
                 $alarm_header = $alarm_header . "," ;
+                $alarm_monitor_name = $monitor->{Name};
                 $eventFound = 1;
             }
             
@@ -531,46 +617,27 @@ sub checkEvents()
 # 
 sub loadMonitors
 {
-    Info( "Loading monitors\n" );
-    $monitor_reload_time = time();
+      Info( "Loading monitors\n" );
+      $monitor_reload_time = time();
 
-    my %new_monitors = ();
+      my %new_monitors = ();
 
-    my $sql = "SELECT * FROM Monitors
-               WHERE find_in_set( Function, 'Modect,Mocord,Nodect' )".
-               ( $Config{ZM_SERVER_ID} ? 'AND ServerId=?' : '' );
-    Debug ("SQL to be executed is :$sql");
-     my $sth = $dbh->prepare_cached( $sql )
+      my $sql = "SELECT * FROM Monitors
+        WHERE find_in_set( Function, 'Modect,Mocord,Nodect' )".
+        ( $Config{ZM_SERVER_ID} ? 'AND ServerId=?' : '' )
+        ;
+      my $sth = $dbh->prepare_cached( $sql )
         or Fatal( "Can't prepare '$sql': ".$dbh->errstr() );
-    my $res = $sth->execute( $Config{ZM_SERVER_ID} ? $Config{ZM_SERVER_ID} : () )
+      my $res = $sth->execute( $Config{ZM_SERVER_ID} ? $Config{ZM_SERVER_ID} : () )
         or Fatal( "Can't execute: ".$sth->errstr() );
-    while( my $monitor = $sth->fetchrow_hashref() )
-    {
-        if ( !zmMemVerify( $monitor ) ) {
-              zmMemInvalidate( $monitor );
-              next;
-        }
-       # next if ( !zmMemVerify( $monitor ) ); # Check shared memory ok
-
-        if ( defined($monitors{$monitor->{Id}}->{LastState}) )
-        {
-            $monitor->{LastState} = $monitors{$monitor->{Id}}->{LastState};
-        }
-        else
-        {
+      while( my $monitor = $sth->fetchrow_hashref() ) {
+        if ( zmMemVerify( $monitor ) ) {
             $monitor->{LastState} = zmGetMonitorState( $monitor );
-        }
-        if ( defined($monitors{$monitor->{Id}}->{LastEvent}) )
-        {
-            $monitor->{LastEvent} = $monitors{$monitor->{Id}}->{LastEvent};
-        }
-        else
-        {
             $monitor->{LastEvent} = zmGetLastEvent( $monitor );
         }
         $new_monitors{$monitor->{Id}} = $monitor;
-    }
-    %monitors = %new_monitors;
+      } # end while fetchrow
+      %monitors = %new_monitors;
 }
 
 
@@ -639,11 +706,42 @@ sub deleteToken
 }
 
 
+# Sends a push notification to the mqtt Broker
+sub sendOverMQTTBroker
+{
+
+    my ($header, $mid) = @_;
+    my $json;
+    my $mqtt;
+
+    $json = encode_json ({
+                monitor=> $mid,
+                name=>$header,
+                state => 'alarm',
+            });
+
+    Debug ("Final JSON being sent is: $json");
+
+    if (defined $mqtt_username && defined $mqtt_password)
+    {
+        $mqtt = Net::MQTT::Simple::Auth->new($mqtt_server, $mqtt_username, $mqtt_password);
+    }
+    else 
+    {
+        $mqtt = Net::MQTT::Simple->new($mqtt_server);
+    }
+
+    $mqtt->publish(join('/','zoneminder',$mid) => $json);
+}
+
+
+
+
 # Sends a push notification to FCM
 sub sendOverFCM
 {
     
-    my ($obj, $header, $mid, $eid,  $str) = @_;
+    my ($obj, $header, $mid, $eid,  $str, $mname) = @_;
     
     my $now = strftime('%I:%M %p, %b-%d',localtime);
     $obj->{badge}++;
@@ -659,7 +757,7 @@ sub sendOverFCM
             
             to=>$obj->{token},
             notification=> {
-               title=>"ZoneMinder Alarm",
+               title=>$mname." Alarm",
                body=>$header." at ".$now,
                sound=>"default",
                badge=>$obj->{badge},
@@ -676,7 +774,7 @@ sub sendOverFCM
         $json = encode_json ({
             to=>$obj->{token},
             data=> {
-                title=>"Zoneminder Alarm",
+                title=>$mname." Alarm",
                 message=>$header." at ".$now,
                 #"force-start"=>1,
                 style=>"inbox",
@@ -731,90 +829,6 @@ sub sendOverFCM
 
 }
 
-# Not used anymore - will remove later
-# Sends a push notification to the remote proxy 
-sub sendOverPushProxy
-{
-    
-    my $pushProxyURL="none";
-    my ($obj, $header, $mid, $str) = @_;
-    $obj->{badge}++;
-    my $uri = $pushProxyURL."/api/v2/push";
-    my $json;
-
-    # Not passing full JSON object - so that payload is limited for now
-    if ($obj->{platform} eq "ios")
-    {
-        if ($use_custom_notification_sound)
-        {
-            $json = encode_json ({
-                device=>$obj->{platform},
-                token=>$obj->{token},
-                alert=>$header,
-                sound=>'blop.caf',
-                custom=> { mid=>$mid},
-                badge=>$obj->{badge}
-
-            });
-
-        }
-        else
-        {
-            $json = encode_json ({
-                device=>$obj->{platform},
-                token=>$obj->{token},
-                alert=>$header,
-                sound=>'true',
-                custom=> { mid=>$mid},
-                badge=>$obj->{badge}
-
-            });
-
-        }
-    }
-    else # android
-    {
-        if ($use_custom_notification_sound)
-        {
-            $json = encode_json ({
-                device=>$obj->{platform},
-                token=>$obj->{token},
-                alert=>$header,
-                sound=>'blop',
-                extra=> { mid=>$mid}
-
-            });
-        }
-        else
-        {
-            $json = encode_json ({
-                device=>$obj->{platform},
-                token=>$obj->{token},
-                extra=> { mid=>$mid},
-                alert=>$header
-
-            });
-}
-    }
-    #print "Sending:$json\n";
-    Debug ("Final JSON being sent is: $json");
-    my $req = HTTP::Request->new ('POST', $uri);
-    #$req->header( 'Content-Type' => 'application/json', 'X-AN-APP-NAME'=> PUSHPROXY_APP_NAME, 'X-AN-APP-KEY'=> PUSHPROXY_APP_ID
-    # );
-     $req->content($json);
-    my $lwp = LWP::UserAgent->new(%ssl_push_opts);
-    my $res = $lwp->request( $req );
-    if ($res->is_success)
-    {
-        Info ("Pushproxy push message success ".$res->content);
-    }
-    else
-    {
-        Info("Push Proxy push message Error:".$res->status_line);
-    }
-}
-
-
 
 # This runs at each tick to purge connections
 # that are inactive or have had an error
@@ -849,7 +863,9 @@ sub checkConnection
     my $ac1 = scalar @active_connections;
     @active_connections = grep { $_->{pending} != INVALID_AUTH   } @active_connections;
     $ac1 = scalar @active_connections;
-    printdbg ("Active connects after INVALID_AUTH purge=$ac1");
+    #printdbg ("Active connects after INVALID_AUTH purge=$ac1");
+    @active_connections = grep { $_->{pending} != INVALID_REMOTE   } @active_connections;
+    $ac1 = scalar @active_connections;
 
 #    commented out - seems like if the app exists and websocket is closed, this code
 #    eventually results in the token being removed from tokens.txt which I don't want
@@ -873,7 +889,7 @@ sub checkConnection
         #@active_connections = grep { $_->{'pending'} != INVALID_APNS || $_->{'token'} ne ''} @active_connections;
         @active_connections = grep { $_->{'pending'} != INVALID_APNS} @active_connections;
         $ac1 = scalar @active_connections;
-        printdbg ("Active connects after INVALID_APNS purge=$ac1");
+        #printdbg ("Active connects after INVALID_APNS purge=$ac1");
     }
 }
 
@@ -1251,8 +1267,7 @@ sub saveTokens
     	print $fh "$stoken:$smonlist:$sintlist:$splatform:$spushstate\n";
     }
     close ($fh);
-    #registerOverPushProxy($stoken,$splatform) if ($use_fcm);
-    #print "Saved Token $token to file\n";
+
     return ($smonlist, $sintlist);
     
 }
@@ -1352,6 +1367,144 @@ sub getIdentity
     return $identity;
 }
     
+sub processAlarms {
+
+    if ($hook) {
+        my $cmd = $hook." ".$alarm_eid." ".$alarm_mid." \"".$alarm_monitor_name."\"";
+        Info ("Invoking hook:".$cmd);
+        my $resTxt = `$cmd`;
+        my $resCode = $? >> 8;
+        chomp($resTxt);
+        Info("hook script returned with text:".$resTxt." exit:".$resCode);
+        return if ($resCode !=0);
+
+        $alarm_header = $resTxt if ($use_hook_description);
+        
+    }
+
+    my $ac = scalar @active_connections;
+    if ($use_mqtt) 
+    {
+        Info ("Sending notification over MQTT");
+        sendOverMQTTBroker($alarm_header, $alarm_mid);
+    }
+
+    Info ("Broadcasting new events to all $ac websocket clients\n");
+    my ($serv) = @_;
+    my $i = 0;
+    foreach (@active_connections)
+    {
+        # Let's see if this connection is interested in this alarm
+        my $monlist = $_->{monlist};
+        my $intlist = $_->{intlist};
+        my $last_sent = $_->{last_sent};
+        my $obj = $_;
+        my $connid = getIdentity($obj);
+        Info ("Checking alarm rules for $connid");
+        # we need to create a per connection array which will be
+        # a subset of main events with the ones that are not in its
+        # monlist left out
+        my @localevents = ();
+        foreach (@events)
+        {
+            if ($monlist eq "" || isInList($monlist, $_->{MonitorId} ) )
+            {
+                my $mint = getInterval($intlist, $monlist, $_->{MonitorId});
+                my $elapsed;
+                if ($last_sent->{$_->{MonitorId}})
+                {
+                    $elapsed = time() -  $last_sent->{$_->{MonitorId}};
+                    if ($elapsed >= $mint)
+                    {
+                        Info("Monitor ".$_->{MonitorId}." event: sending this out as $elapsed is >= interval of $mint");
+                        $_->{Cause} = $alarm_header if ($hook && $use_hook_description);
+                        push (@localevents, $_);
+                        $last_sent->{$_->{MonitorId}} = time();
+                    }
+                    else
+                    {
+                        
+                            Info("Monitor ".$_->{MonitorId}." event: NOT sending this out as $elapsed is less than interval of $mint");
+                    }
+
+                }
+                else
+                {
+                    # This means we have no record of sending any event to this monitor
+                    $last_sent->{$_->{MonitorId}} = time();
+                    Info("Monitor ".$_->{MonitorId}." event: last time not found, so sending");
+                    $_->{Cause} = $alarm_header if ($hook && $use_hook_description);
+                    push (@localevents, $_);
+                }
+
+            }
+            else 
+            {
+                Info ("Not sending alarm as Monitor ".$_->{MonitorId}." is excluded");
+            }
+            
+
+        }
+        # if this array is empty that means none of the alarms 
+        # were generated from a monitor it is interested in
+        next if (scalar @localevents == 0);
+
+        my $str = encode_json({event => 'alarm', type=>'', status=>'Success', events => \@localevents});
+        my $sup_str = encode_json({event => 'alarm', type=>'', status=>'Success', supplementary=>'true', events => \@localevents});
+        my %hash_str = (event => 'alarm', status=>'Success', events => \@localevents);
+        $i++;
+        # if there is APNS send it over APNS
+        # if not, send it over Websockets 
+        # also disabled is a special state which means its registered over push
+        # but it still wants messages over websockets - zmNinja sets this
+        # when websockets override is enabled
+        if (($_->{token} ne "") && ($_->{pushstate} ne "disabled" ) && ($_->{pending} != PENDING_WEBSOCKET))
+        {
+            if ($use_fcm)
+            {
+                Info ("Sending notification over FCM");  
+                sendOverFCM($_,$alarm_header, $alarm_mid, $alarm_eid,$str, $alarm_monitor_name) ;     
+            }
+            
+            # send supplementary event data over websocket
+            if ($_->{pending} == VALID_WEBSOCKET)
+            {
+                if (exists $_->{conn})
+                {
+                    Info ($_->{conn}->ip()."-sending supplementary data over websockets\n");
+                    eval {$_->{conn}->send_utf8($sup_str);};
+                    if ($@)
+                    {
+            
+                        printdbg ("Marking ".$_->{conn}->ip()." as INVALID_WEBSOCKET, as websocket send error with token:",$_->{token});     
+                        $_->{pending} = INVALID_WEBSOCKET;
+
+                    }
+                }
+            }
+
+        }
+            # if there is a websocket send it over websockets
+            elsif ($_->{pending} == VALID_WEBSOCKET)
+            {
+                if (exists $_->{conn})
+                {
+                    Info ($_->{conn}->ip()."-sending over websockets\n");
+                    eval {$_->{conn}->send_utf8($str);};
+                    if ($@)
+                    {
+                
+                        printdbg ("Marking ".$_->{conn}->ip()." as INVALID_WEBSOCKET, as websocket send error");     
+                        $_->{pending} = INVALID_WEBSOCKET;
+                    }
+                }
+            }
+            
+
+            
+        }
+    
+}
 
 # This is really the main module
 # It opens a WSS socket and keeps listening
@@ -1366,6 +1519,7 @@ sub initSocketServer
   	       $ssl_server = IO::Socket::SSL->new(
 		      Listen        => 10,
 		      LocalPort     => $port,
+		      LocalAddr => $address,
 		      Proto         => 'tcp',
 		      Reuse     => 1,
 		      ReuseAddr     => 1,
@@ -1391,123 +1545,35 @@ sub initSocketServer
         tick_period => $event_check_interval,
         on_tick => sub {
             checkConnection();
-            my $ac = scalar @active_connections;
+            
             if (checkEvents())
             {
-                Info ("Broadcasting new events to all $ac websocket clients\n");
-                    my ($serv) = @_;
-                    my $i = 0;
-                    foreach (@active_connections)
-                    {
-                        # Let's see if this connection is interested in this alarm
-                        my $monlist = $_->{monlist};
-                        my $intlist = $_->{intlist};
-                        my $last_sent = $_->{last_sent};
-                        my $obj = $_;
-                        my $connid = getIdentity($obj);
-                        Info ("Checking alarm rules for $connid");
-                        # we need to create a per connection array which will be
-                        # a subset of main events with the ones that are not in its
-                        # monlist left out
-                        my @localevents = ();
-                        foreach (@events)
-                        {
-                            if ($monlist eq "" || isInList($monlist, $_->{MonitorId} ) )
-                            {
-                                my $mint = getInterval($intlist, $monlist, $_->{MonitorId});
-                                my $elapsed;
-                                if ($last_sent->{$_->{MonitorId}})
-                                {
-                                     $elapsed = time() -  $last_sent->{$_->{MonitorId}};
-                                     if ($elapsed >= $mint)
-                                    {
-                                        Info("Monitor ".$_->{MonitorId}." event: sending this out as $elapsed is >= interval of $mint");
-                                        push (@localevents, $_);
-                                        $last_sent->{$_->{MonitorId}} = time();
-                                    }
-                                    else
-                                    {
-                                        
-                                         Info("Monitor ".$_->{MonitorId}." event: NOT sending this out as $elapsed is less than interval of $mint");
-                                    }
+            
+                Info ("Launching thread to handle alarm for:".$alarm_eid." monitor:".$alarm_mid);
+                processAlarms();
+                #threads->create ( sub {
+                #   processAlarms();
+                #    Info ("Terminating thread to handle alarm for:".$alarm_eid." monitor:".$alarm_mid);
+                #   threads->detach();
+                #});
+                # disable forking for now
+                # as child exit kills the socket
 
-                                }
-                                else
-                                {
-                                    # This means we have no record of sending any event to this monitor
-                                    $last_sent->{$_->{MonitorId}} = time();
-                                    Info("Monitor ".$_->{MonitorId}." event: last time not found, so sending");
-                                    push (@localevents, $_);
-                                }
+                #processAlarms();
+                #my $pid = fork;
+                #if (!defined $pid) {
+                #    die "Cannot fork: $!";
 
-                            }
-                            else 
-                            {
-                                Info ("Not sending alarm as Monitor ".$_->{MonitorId}." is excluded");
-                            }
-                            
-
-                        }
-                        # if this array is empty that means none of the alarms 
-                        # were generated from a monitor it is interested in
-                        next if (scalar @localevents == 0);
-
-                        my $str = encode_json({event => 'alarm', type=>'', status=>'Success', events => \@localevents});
-                        my $sup_str = encode_json({event => 'alarm', type=>'', status=>'Success', supplementary=>'true', events => \@localevents});
-                        my %hash_str = (event => 'alarm', status=>'Success', events => \@localevents);
-                        $i++;
-                        # if there is APNS send it over APNS
-                        # if not, send it over Websockets 
-                        # also disabled is a special state which means its registered over push
-                        # but it still wants messages over websockets - zmNinja sets this
-                        # when websockets override is enabled
-                        if (($_->{token} ne "") && ($_->{pushstate} ne "disabled" ) && ($_->{pending} != PENDING_WEBSOCKET))
-                        {
-                            if ($use_fcm)
-                            {
-                                Info ("Sending notification over PushProxy");
-                                #sendOverPushProxy($_,$alarm_header, $alarm_mid, $str) ;     
-                                sendOverFCM($_,$alarm_header, $alarm_mid, $alarm_eid,$str) ;     
-                            }
-                            
-                            # send supplementary event data over websocket
-                            if ($_->{pending} == VALID_WEBSOCKET)
-                            {
-                                if (exists $_->{conn})
-                                {
-                                    Info ($_->{conn}->ip()."-sending supplementary data over websockets\n");
-                                    eval {$_->{conn}->send_utf8($sup_str);};
-                                    if ($@)
-                                    {
-                            
-                                        printdbg ("Marking ".$_->{conn}->ip()." as INVALID_WEBSOCKET, as websocket send error with token:",$_->{token});     
-                                        $_->{pending} = INVALID_WEBSOCKET;
-
-                                    }
-                                }
-                            }
-
-                        }
-                        # if there is a websocket send it over websockets
-                        elsif ($_->{pending} == VALID_WEBSOCKET)
-                        {
-                            if (exists $_->{conn})
-                            {
-                                Info ($_->{conn}->ip()."-sending over websockets\n");
-                                eval {$_->{conn}->send_utf8($str);};
-                                if ($@)
-                                {
-                            
-                                    printdbg ("Marking ".$_->{conn}->ip()." as INVALID_WEBSOCKET, as websocket send error");     
-                                    $_->{pending} = INVALID_WEBSOCKET;
-                                }
-                            }
-                        }
-                        
-
-                        
-                    }
-
+                #}
+                #elsif ($pid == 0) {
+                #    # client
+                #    local $SIG{'CHLD'} = 'DEFAULT';
+                #    printdbg ("Forking process to handle alarm for:".$alarm_eid." monitor:".$alarm_mid);
+                #    processAlarms();
+                #    printdbg ("Ending process to handle alarm for:".$alarm_eid." monitor:".$alarm_mid);
+                #    exit 0; 
+                #}
+                
 
             }
         },
@@ -1552,7 +1618,7 @@ sub initSocketServer
                             # not present
                             if ( $_->{token} eq '')
                             {
-                                $_->{pending}=INVALID_WEBSOCKET; 
+                                $_->{pending}=INVALID_REMOTE;
                                 Info( "Marking ".$conn->ip()." for deletion as websocket closed remotely\n");
                             }
                             else
