@@ -4,6 +4,13 @@
 #
 
 # Search for config files, if they don't exist, copy the default ones
+if [ ! -d /config/conf ]; then
+	echo "Creating conf folder in config folder"
+	mkdir /config/conf
+else
+	echo "Using existing conf folder"
+fi
+
 if [ -f /root/zm.conf ]; then
 	echo "Moving zm.conf"
 	mv /root/zm.conf /config/conf/zm.default
@@ -11,7 +18,6 @@ if [ -f /root/zm.conf ]; then
 else
 	echo "File zm.conf already moved"
 fi
-
 
 if [ -f /root/zmeventnotification.ini ]; then
 	echo "Moving zmeventnotification.ini"
@@ -55,11 +61,8 @@ else
 	chmod 644 /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
 fi
 
-# Create Conf folder if it doesn't exist
-if [ ! -d /config/conf ]; then
-	echo "Creating conf folder in config folder"
-	mkdir /config/conf
-else
+# Copy conf files if there are any
+if [ -d /config/conf ]; then
 	echo "Copy /config/conf/ scripts to /etc/zm/conf.d/"
 	cp /config/conf/*.conf /etc/zm/conf.d/ 2>/dev/null
 	chown root:root /etc/zm/conf.d* 2>/dev/null
