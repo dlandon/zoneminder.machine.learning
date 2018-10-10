@@ -4,12 +4,14 @@
 #
 
 # Search for config files, if they don't exist, copy the default ones
-if [ ! -f /config/zm.conf ]; then
-	echo "Copying zm.conf"
-	cp /root/zm.conf /config/zm.conf
+if [ -f /root/zm.conf ]; then
+	echo "Moving zm.conf"
+	mv /root/zm.conf /config/conf/zm.default
+	cp /etc/zm/conf.d/README /config/conf/README
 else
-	echo "File zm.conf already exists"
+	echo "File zm.conf already moved"
 fi
+
 
 if [ -f /root/zmeventnotification.ini ]; then
 	echo "Moving zmeventnotification.ini"
@@ -39,7 +41,8 @@ fi
 rm -rf /config/perl5/
 rm -rf /config/zmeventnotification/
 rm -rf /config/zmeventnotification.pl
-rm -rf /config/skins/
+rm -rf /config/skins
+rm -rf /config/zm.conf
 
 # Create Control folder if it doesn't exist and copy files into image
 if [ ! -d /config/control ]; then
@@ -47,9 +50,20 @@ if [ ! -d /config/control ]; then
 	mkdir /config/control
 else
 	echo "Copy /config/control/ scripts to /usr/share/perl5/ZoneMinder/Control/"
-	chown root:root /config/control/* 2>/dev/null
-	chmod 644 /config/control/* 2>/dev/null
-	cp /config/control/* /usr/share/perl5/ZoneMinder/Control/ 2>/dev/null
+	cp /config/control/*.pl /usr/share/perl5/ZoneMinder/Control/ 2>/dev/null
+	chown root:root /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
+	chmod 644 /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
+fi
+
+# Create Conf folder if it doesn't exist
+if [ ! -d /config/conf ]; then
+	echo "Creating conf folder in config folder"
+	mkdir /config/conf
+else
+	echo "Copy /config/conf/ scripts to /etc/zm/conf.d/"
+	cp /config/conf/*.conf /etc/zm/conf.d/ 2>/dev/null
+	chown root:root /etc/zm/conf.d* 2>/dev/null
+	chmod 640 /etc/conf.d/* 2>/dev/null
 fi
 
 echo "Creating symbolink links"
@@ -67,10 +81,6 @@ ln -s /config/ssmtp /etc/ssmtp
 rm -r /var/lib/mysql
 ln -s /config/mysql /var/lib/mysql
 
-# zm.conf
-rm -r /etc/zm/zm.conf
-ln -sf /config/zm.conf /etc/zm/
-
 # Set ownership for unRAID
 PUID=${PUID:-99}
 PGID=${PGID:-100}
@@ -81,13 +91,15 @@ usermod -d /config nobody
 # Change some ownership and permissions
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
-chown $PUID:$PGID /config/zm.conf
-chmod 666 /config/zm.conf
+chown $PUID:$PGID /config/conf
+chmod 666 /config/conf
 chown -R $PUID:$PGID /config/control
 chmod -R 666 /config/control
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 666 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.ini
+chown -R $PUID:$PGID /config/conf
+chmod -R 666 /config/conf
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
@@ -152,6 +164,28 @@ else
 	if [ `stat -c '%a' /var/cache/zoneminder/temp` != '777' ]; then
 		echo "Correcting /var/cache/zoneminder/temp permissions..."
 		chmod -R 777 /var/cache/zoneminder/temp
+	fi
+fi
+
+# Create cache folder
+if [ ! -d /var/cache/zoneminder/cache ]; then
+	echo "Create cache folder"
+	mkdir /var/cache/zoneminder/cache
+	chown -R root:www-data /var/cache/zoneminder/cache
+	chmod -R 777 /var/cache/zoneminder/cache
+else
+	echo "Using existing data directory for cache"
+
+	# Check the ownership on the /var/cache/zoneminder/cache directory
+	if [ `stat -c '%U:%G' /var/cache/zoneminder/cache` != 'root:www-data' ]; then
+		echo "Correcting /var/cache/zoneminder/cache ownership..."
+		chown -R root:www-data /var/cache/zoneminder/cache
+	fi
+
+	# Check the permissions on the /var/cache/zoneminder/cache directory
+	if [ `stat -c '%a' /var/cache/zoneminder/cache` != '777' ]; then
+		echo "Correcting /var/cache/zoneminder/cache permissions..."
+		chmod -R 777 /var/cache/zoneminder/cache
 	fi
 fi
 

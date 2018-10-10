@@ -1,4 +1,4 @@
-# Zoneminder 1.30.4 for unRAID
+# Zoneminder 1.32.1 for Unraid
 
 The configuration settings that are needed for this implementation of Zoneminder are pre-applied and do not need to be changed on the first run of Zoneminder.
 
@@ -26,9 +26,13 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2018-10-09
+- Update Zoneminder to 1.32.1.
+- Update zmeventnotification to 2.0.
+- Update php to 7.1.
+
 2018-10-08
 - Update Apache configuration.  Clear your browser cache if you have trouble viewng the Zoneminder webpage.
-- Remove skins from /config/.  The skins change on each version update and are not persistent.
 
 2018-05-13
 - Update zmNinja Event Notification Server to version 1.0.
