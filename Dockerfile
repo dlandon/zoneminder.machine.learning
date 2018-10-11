@@ -3,6 +3,8 @@ FROM dlandon/baseimage
 LABEL maintainer="dlandon"
 
 ENV	PHP_VERS="7.1"
+ENV ZM_VERS="1.32"
+
 ENV	SHMEM="50%" \
 	PUID="99" \
 	PGID="100"
@@ -12,7 +14,7 @@ COPY defaults/ /root/
 COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 COPY zmeventnotification/zmeventnotification.ini /root/
 
-RUN add-apt-repository -y ppa:iconnor/zoneminder-1.32 && \
+RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	add-apt-repository ppa:ondrej/php && \
 	apt-get update && \
 	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \
@@ -24,8 +26,8 @@ RUN add-apt-repository -y ppa:iconnor/zoneminder-1.32 && \
 	apt-get -y install apache2 ssmtp mailutils net-tools && \
 	apt-get -y install php$PHP_VERS-common php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl php$PHP_VERS-ldap && \
 	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mcrypt php$PHP_VERS-mysql php$PHP_VERS-opcache php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu && \
-	apt-get -y install zoneminder && \
-	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl
+	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl && \
+	apt-get -y install zoneminder
 
 RUN	echo "extension=apcu.so" > /etc/php/$PHP_VERS/mods-available/apcu.ini && \
 	rm /etc/mysql/my.cnf && \
@@ -36,6 +38,8 @@ RUN	echo "extension=apcu.so" > /etc/php/$PHP_VERS/mods-available/apcu.ini && \
 	a2enmod php$PHP_VERS && \
 	a2enconf zoneminder && \
 	a2enmod rewrite && \
+	a2enmod expires && \
+	a2enmod headers && \
 	perl -MCPAN -e "force install Net::WebSocket::Server" && \
 	perl -MCPAN -e "force install LWP::Protocol::https" && \
 	perl -MCPAN -e "force install Config::IniFiles" && \
@@ -65,7 +69,7 @@ RUN	mv /root/zoneminder /etc/init.d/zoneminder && \
 	service mysql restart && \
 	sleep 10 && \
 	service apache2 restart && \
-	/etc/init.d/zoneminder start
+	service zoneminder start
 
 RUN	systemd-tmpfiles --create zoneminder.conf && \
 	mv /root/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf && \

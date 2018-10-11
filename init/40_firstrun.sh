@@ -1,18 +1,18 @@
 #!/bin/bash
 #
-# 30_firstrun.sh
+# 40_firstrun.sh
 #
 
-# Search for config files, if they don't exist, copy the default ones
+# Search for config files, if they don't exist, create the default ones
 if [ ! -d /config/conf ]; then
-	echo "Creating conf folder in config folder"
+	echo "Creating conf folder"
 	mkdir /config/conf
 else
 	echo "Using existing conf folder"
 fi
 
 if [ -f /root/zm.conf ]; then
-	echo "Moving zm.conf"
+	echo "Moving zm.conf to config folder"
 	mv /root/zm.conf /config/conf/zm.default
 	cp /etc/zm/conf.d/README /config/conf/README
 else
@@ -23,7 +23,7 @@ if [ -f /root/zmeventnotification.ini ]; then
 	echo "Moving zmeventnotification.ini"
 	mv /root/zmeventnotification.ini /config/zmeventnotification.ini
 else
-	echo "File zmnotification.ini already moved"
+	echo "File zmeventnotification.ini already moved"
 fi
 
 # Move ssmtp configuration if it doesn't exist
@@ -31,7 +31,7 @@ if [ ! -d /config/ssmtp ]; then
 	echo "Moving ssmtp to config folder"
 	cp -p -R /etc/ssmtp/ /config/
 else
-	echo "Using existing ssmtp configuration"
+	echo "Using existing ssmtp folder"
 fi
 
 # Move mysql database if it doesn't exit
@@ -40,7 +40,7 @@ if [ ! -d /config/mysql/mysql ]; then
 	rm -rf /config/mysql
 	cp -p -R /var/lib/mysql /config/
 else
-	echo "Using existing mysql database"
+	echo "Using existing mysql database folder"
 fi
 
 # files and directories no longer exposed at config.
@@ -94,15 +94,14 @@ usermod -d /config nobody
 # Change some ownership and permissions
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
-chown $PUID:$PGID /config/conf
-chmod 666 /config/conf
+chown -R $PUID:$PGID /config/conf
+chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
 chmod -R 666 /config/control
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 666 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.ini
-chown -R $PUID:$PGID /config/conf
-chmod -R 666 /config/conf
+chmod -R 666 /config/zmeventnotification.ini
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
@@ -208,6 +207,7 @@ mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=${SHMEM} tmpfs /dev/shm
 
 echo "Starting services"
 service mysql start
+
 # Update the database if necessary
 zmupdate.pl -nointeractive
 zmupdate.pl -f

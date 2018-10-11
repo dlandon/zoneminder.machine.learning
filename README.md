@@ -26,6 +26,11 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2018-10-11
+- Permission adjustments on config files.
+- Minor apache tweaks.
+- Cleanup dockerfile.
+
 2018-10-09
 - Update Zoneminder to 1.32.1.
 - Update zmeventnotification to 2.0.
