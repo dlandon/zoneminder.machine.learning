@@ -4,6 +4,7 @@ LABEL maintainer="dlandon"
 
 ENV	PHP_VERS="7.1"
 ENV ZM_VERS="1.32"
+ENV ZMEVENT="2.0"
 
 ENV	SHMEM="50%" \
 	PUID="99" \
@@ -29,17 +30,19 @@ RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl && \
 	apt-get -y install zoneminder
 
-RUN	echo "extension=apcu.so" > /etc/php/$PHP_VERS/mods-available/apcu.ini && \
-	rm /etc/mysql/my.cnf && \
+RUN	rm /etc/mysql/my.cnf && \
 	cp /etc/mysql/mariadb.conf.d/50-server.cnf /etc/mysql/my.cnf && \
 	adduser www-data video && \
+	a2enmod php$PHP_VERS && \
+	a2enconf php$PHP_VERS-fpm && \
 	a2enmod cgi && \
 	a2enmod ssl && \
-	a2enmod php$PHP_VERS && \
-	a2enconf zoneminder && \
 	a2enmod rewrite && \
 	a2enmod expires && \
 	a2enmod headers && \
+	a2enconf zoneminder && \
+	echo "extension=apcu.so" > /etc/php/$PHP_VERS/mods-available/apcu.ini && \
+	echo "extension=mcrypt.so" > /etc/php/$PHP_VERS/mods-available/mcrypt.ini && \
 	perl -MCPAN -e "force install Net::WebSocket::Server" && \
 	perl -MCPAN -e "force install LWP::Protocol::https" && \
 	perl -MCPAN -e "force install Config::IniFiles" && \
@@ -64,7 +67,8 @@ RUN	cd /root && \
 	mysql -sfu root < "mysql_defaults.sql" && \
 	rm mysql_defaults.sql
 
-RUN	mv /root/zoneminder /etc/init.d/zoneminder && \
+RUN	cp -p /etc/zm/zm.conf /root/zm.conf && \
+	mv /root/zoneminder /etc/init.d/zoneminder && \
 	chmod +x /etc/init.d/zoneminder && \
 	service mysql restart && \
 	sleep 10 && \
@@ -77,8 +81,7 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	chmod a+x /usr/bin/zmeventnotification.pl && \
 	mkdir /etc/private && \
 	chmod 777 /etc/private && \
-	chmod -R +x /etc/my_init.d/ && \
-	cp -p /etc/zm/zm.conf /root/zm.conf
+	chmod -R +x /etc/my_init.d/
 
 RUN	apt-get -y remove wget make && \
 	update-rc.d -f zoneminder remove && \

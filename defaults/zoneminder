@@ -22,21 +22,22 @@ TMPDIR="/tmp/zm"
 command="$ZM_PATH_BIN/zmpkg.pl"
 
 start() {
-	sleep 15
-	echo -n "Starting $prog: "
+	echo "Starting $prog:"
 	export TZ=:/etc/localtime
 	mkdir -p "$RUNDIR" && chown www-data:www-data "$RUNDIR"
 	mkdir -p "$TMPDIR" && chown www-data:www-data "$TMPDIR"
+	rm -rf "$RUNDIR"/*
+	sleep 5
 	$command start
 	RETVAL=$?
-	[ $RETVAL = 0 ] && echo success
-	[ $RETVAL != 0 ] && echo failure
+	[ $RETVAL = 0 ] && echo "$prog started successfully"
+	[ $RETVAL != 0 ] && echo "$prog failed to start"
 	echo
 	[ $RETVAL = 0 ] && touch /var/lock/zm
 	return $RETVAL
 }
 stop() {
-	echo -n "Stopping $prog: "
+	echo "Stopping $prog:"
 	#
 	# Why is this status check being done?
 	# as $command stop returns 1 if zoneminder
@@ -47,14 +48,14 @@ stop() {
 	#
 	result=`$command status`
 	if [ ! "$result" = "running" ]; then
-		echo "Zoneminder already stopped"
+		echo "$prog already stopped"
 		echo
 		RETVAL=0
 	else
 		$command stop
 		RETVAL=$?
-		[ $RETVAL = 0 ] && echo success
-		[ $RETVAL != 0 ] && echo failure
+		[ $RETVAL = 0 ] && echo "$prog stopped successfully"
+		[ $RETVAL != 0 ] && echo "$prog failed to stop"
 		echo
 		[ $RETVAL = 0 ] && rm -f /var/lock/zm
 	fi
@@ -62,10 +63,10 @@ stop() {
 status() {
 	result=`$command status`
 	if [ "$result" = "running" ]; then
-		echo "ZoneMinder is running"
+		echo "$prog is running"
 		RETVAL=0
 	else
-		echo "ZoneMinder is stopped"
+		echo "$prog is stopped"
 		RETVAL=1
 	fi
 }
