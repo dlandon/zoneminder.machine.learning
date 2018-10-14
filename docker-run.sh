@@ -8,7 +8,6 @@ docker run -d --name="Zoneminder" \
 -p 9000:9000/tcp \
 -e TZ="America/New_York" \
 -e SHMEM="50%" \
--e SSL_EVENTS="1" \
 -e PUID="99" \
 -e PGID="100" \
 -v "/mnt/cache/appdata/Zoneminder":"/config":rw \
