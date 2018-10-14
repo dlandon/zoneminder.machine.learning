@@ -51,7 +51,7 @@ use bytes;
 # ==========================================================================
 
 
-my $app_version="2.0";
+my $app_version="2.0-docker";
 
 # ==========================================================================
 #
@@ -96,7 +96,6 @@ my $config_file_present;
 my $check_config;
 
 my $port;
-my $address;
 
 my $auth_enabled;
 my $auth_timeout;
@@ -210,7 +209,6 @@ GetOptions(
   "check-config"                   => \$check_config,
 
   "port=i"                         => \$port,
-  "address=s"                      => \$address,
 
   "enable-auth!"                   => \$auth_enabled,
   
@@ -280,7 +278,6 @@ if ($config_file_present) {
 
 
 $port //= config_get_val($config, "network", "port", DEFAULT_PORT);
-$address //= config_get_val($config, "network", "address", DEFAULT_ADDRESS);
 
 $auth_enabled //= config_get_val($config, "auth", "enable",  DEFAULT_AUTH_ENABLE);
 $auth_timeout //= config_get_val($config, "auth", "timeout", DEFAULT_AUTH_TIMEOUT);
@@ -358,7 +355,6 @@ ${\(
 )}:
 
 Port .......................... ${\(value_or_undefined($port))}
-Address ....................... ${\(value_or_undefined($address))}
 Event check interval .......... ${\(value_or_undefined($event_check_interval))}
 Monitor reload interval ....... ${\(value_or_undefined($monitor_reload_interval))}
 
