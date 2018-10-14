@@ -1,4 +1,4 @@
-# Zoneminder 1.32.1 for Unraid
+# Zoneminder 1.32.2 for Unraid
 
 The configuration settings that are needed for this implementation of Zoneminder are pre-applied and do not need to be changed on the first run of Zoneminder.
 
@@ -25,6 +25,9 @@ To access the Zoneminder gui: http://IP:8080/zm or https://IP:8443/zm
 The zmNinja Event Notification Server is accessed at port 9000.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 Changes:
+
+2018-10-13
+- Update Zoneminder to 1.32.2.
 
 2018-10-12
 - Fixed an issue with zmaudit.pl failing to run after Zoneminder crashes.
