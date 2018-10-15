@@ -2,9 +2,9 @@ FROM dlandon/baseimage
 
 LABEL maintainer="dlandon"
 
-ENV	PHP_VERS="7.1"
+ENV	PHP_VERS="7.2"
 ENV ZM_VERS="1.32"
-ENV ZMEVENT="2.0"
+ENV ZMEVENT_VERS="2.0"
 
 ENV	SHMEM="50%" \
 	PUID="99" \
@@ -22,12 +22,14 @@ RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	apt-get -y dist-upgrade && \
 	apt-get -y install php$PHP_VERS mariadb-server && \
 	apt-get -y install wget sudo && \
-	apt-get -y install cakephp && \
 	apt-get -y install libav-tools && \
 	apt-get -y install apache2 ssmtp mailutils net-tools && \
 	apt-get -y install php$PHP_VERS-common php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl php$PHP_VERS-ldap && \
-	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mcrypt php$PHP_VERS-mysql php$PHP_VERS-opcache php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu && \
-	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl && \
+	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mysql php$PHP_VERS-opcache php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu php$PHP_VERS-intl && \
+	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl php-dev libmcrypt-dev php-pear && \
+	curl -s https://getcomposer.org/installer | php && \
+	mv composer.phar /usr/local/bin/composer && \
+	composer require cakephp/cakephp:"~3.5" && \
 	apt-get -y install zoneminder
 
 RUN	rm /etc/mysql/my.cnf && \
@@ -67,8 +69,7 @@ RUN	cd /root && \
 	mysql -sfu root < "mysql_defaults.sql" && \
 	rm mysql_defaults.sql
 
-RUN	cp -p /etc/zm/zm.conf /root/zm.conf && \
-	mv /root/zoneminder /etc/init.d/zoneminder && \
+RUN	mv /root/zoneminder /etc/init.d/zoneminder && \
 	chmod +x /etc/init.d/zoneminder && \
 	service mysql restart && \
 	sleep 10 && \
@@ -81,7 +82,8 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	chmod a+x /usr/bin/zmeventnotification.pl && \
 	mkdir /etc/private && \
 	chmod 777 /etc/private && \
-	chmod -R +x /etc/my_init.d/
+	chmod -R +x /etc/my_init.d/ && \
+	cp -p /etc/zm/zm.conf /root/zm.conf
 
 RUN	apt-get -y remove wget make && \
 	update-rc.d -f zoneminder remove && \
