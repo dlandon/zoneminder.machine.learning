@@ -28,7 +28,6 @@ Changes:
 
 2018-10-15
 - Update php to 7.2.
-- Update cakephp to 3.5.
 
 2018-10-14
 - Minor changes to zmeventnotification.ini and zmeventnotification.pl unique to the docker.
