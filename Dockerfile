@@ -28,10 +28,8 @@ RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	apt-get -y install wget sudo make && \
 	apt-get -y install libav-tools && \
 	apt-get -y install apache2 ssmtp mailutils net-tools && \
-	apt-get -y install php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl php$PHP_VERS-ldap && \
-	apt-get -y install php$PHP_VERS-mysql php$PHP_VERS-mbstring php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu && \
 	apt-get -y install php$PHP_VERS-common php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl php$PHP_VERS-ldap && \
-	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mysql php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu php$PHP_VERS-intl && \
+	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mcrypt php$PHP_VERS-mysql php$PHP_VERS-opcache php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip && \
 	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl php-dev libmcrypt-dev php-pear && \
 	apt-get -y install zoneminder
 
