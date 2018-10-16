@@ -2,7 +2,7 @@ FROM dlandon/baseimage
 
 LABEL maintainer="dlandon"
 
-ENV	PHP_VERS="7.2"
+ENV	PHP_VERS="7.1"
 ENV ZM_VERS="1.32"
 ENV ZMEVENT_VERS="2.0"
 
@@ -31,7 +31,7 @@ RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	apt-get -y install php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl php$PHP_VERS-ldap && \
 	apt-get -y install php$PHP_VERS-mysql php$PHP_VERS-mbstring php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu && \
 	apt-get -y install php$PHP_VERS-common php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl php$PHP_VERS-ldap && \
-	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mysql php$PHP_VERS-opcache php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu php$PHP_VERS-intl && \
+	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mysql php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip php$PHP_VERS-apcu php$PHP_VERS-intl && \
 	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl php-dev libmcrypt-dev php-pear && \
 	apt-get -y install zoneminder
 
@@ -88,7 +88,7 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf
 
-RUN	apt-get -y remove wget make && \
+RUN	apt-get -y remove wget make php7.2-opcache && \
 	apt-get -y clean && \
 	apt-get -y autoremove && \
 	rm -rf /tmp/* /var/tmp/*
