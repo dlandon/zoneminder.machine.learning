@@ -15,22 +15,16 @@ COPY defaults/ /root/
 COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 COPY zmeventnotification/zmeventnotification.ini /root/
 
-RUN	echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu xenial main" >> /etc/apt/sources.list.d/php7.list && \
-	echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu xenial main" >> /etc/apt/sources.list.d/php7.list && \
-	apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 4F4EA0AAE5267A6C
-
 RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	add-apt-repository ppa:ondrej/php && \
 	apt-get update && \
 	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \
 	apt-get -y dist-upgrade && \
-	apt-get -y install php$PHP_VERS mariadb-server && \
-	apt-get -y install wget sudo make && \
-	apt-get -y install libav-tools && \
-	apt-get -y install apache2 ssmtp mailutils net-tools && \
-	apt-get -y install php$PHP_VERS-common php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl php$PHP_VERS-ldap && \
-	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mcrypt php$PHP_VERS-mysql php$PHP_VERS-opcache php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip && \
-	apt-get -y install libcrypt-mysql-perl libyaml-perl make libjson-perl php-dev libmcrypt-dev php-pear && \
+	apt-get -y install php$PHP_VERS mariadb-server apache2 && \
+	apt-get -y install ssmtp mailutils net-tools libav-tools wget sudo make && \
+	apt-get -y install php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl && \
+	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mcrypt php$PHP_VERS-mysql php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip && \
+	apt-get -y install libcrypt-mysql-perl libyaml-perl libjson-perl && \
 	apt-get -y install zoneminder
 
 RUN	rm /etc/mysql/my.cnf && \
@@ -73,7 +67,7 @@ RUN	cd /root && \
 RUN	mv /root/zoneminder /etc/init.d/zoneminder && \
 	chmod +x /etc/init.d/zoneminder && \
 	service mysql restart && \
-	sleep 10 && \
+	sleep 5 && \
 	service apache2 restart && \
 	service zoneminder start
 
@@ -86,7 +80,7 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf
 
-RUN	apt-get -y remove wget make php7.2-opcache && \
+RUN	apt-get -y remove wget make && \
 	apt-get -y clean && \
 	apt-get -y autoremove && \
 	rm -rf /tmp/* /var/tmp/*
