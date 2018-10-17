@@ -20,10 +20,10 @@ RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	apt-get update && \
 	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \
 	apt-get -y dist-upgrade && \
-	apt-get -y install php$PHP_VERS mariadb-server apache2 && \
+	apt-get -y install apache2 mariadb-server && \
 	apt-get -y install ssmtp mailutils net-tools libav-tools wget sudo make && \
-	apt-get -y install php$PHP_VERS-curl php$PHP_VERS-fpm php$PHP_VERS-gd php$PHP_VERS-gmp php$PHP_VERS-imap php$PHP_VERS-intl && \
-	apt-get -y install php$PHP_VERS-mbstring php$PHP_VERS-mcrypt php$PHP_VERS-mysql php$PHP_VERS-xml php$PHP_VERS-xmlrpc php$PHP_VERS-zip && \
+	apt-get -y install php$PHP_VERS php$PHP_VERS-fpm php$PHP_VERS-mysql php$PHP_VERS-common php$PHP_VERS-gd && \
+	apt-get -y install php$PHP_VERS-json php$PHP_VERS-cli php$PHP_VERS-curl libapache2-mod-php$PHP_VERS && \
 	apt-get -y install libcrypt-mysql-perl libyaml-perl libjson-perl && \
 	apt-get -y install zoneminder
 
