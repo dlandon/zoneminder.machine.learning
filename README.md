@@ -26,6 +26,9 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2018-10-19
+- Add ability to specify the ServerName in apache2 for ssl certs.
+
 2018-10-18
 - Fix ssmtp issues
 
