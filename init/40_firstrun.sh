@@ -91,6 +91,9 @@ usermod -o -u $PUID nobody
 usermod -g $PGID nobody
 usermod -d /config nobody
 
+# Set ownership for mail
+usermod -a -G mail www-data
+
 # Change some ownership and permissions
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
@@ -99,7 +102,7 @@ chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
 chmod -R 666 /config/control
 chown -R $PUID:$PGID /config/ssmtp
-chmod -R 666 /config/ssmtp
+chmod -R 777 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.ini
 chmod -R 666 /config/zmeventnotification.ini
 
