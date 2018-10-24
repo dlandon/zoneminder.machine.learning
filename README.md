@@ -26,6 +26,9 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2018-10-24
+- Run zmaudit weekly by cron.  Zmaudit does not need to run continuously.
+
 2018-10-19
 - Add ability to specify the ServerName in apache2 for ssl certs.
 

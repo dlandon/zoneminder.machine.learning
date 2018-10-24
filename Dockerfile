@@ -78,7 +78,9 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	mkdir /etc/private && \
 	chmod 777 /etc/private && \
 	chmod -R +x /etc/my_init.d/ && \
-	cp -p /etc/zm/zm.conf /root/zm.conf
+	cp -p /etc/zm/zm.conf /root/zm.conf && \
+	echo "/usr/bin/zmaudit.pl -f &" > /etc/cron.weekly/zmaudit && \
+	chmod +x /etc/cron.weekly/zmaudit
 
 RUN	apt-get -y remove wget make && \
 	apt-get -y clean && \
