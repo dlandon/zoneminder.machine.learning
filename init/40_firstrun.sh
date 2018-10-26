@@ -19,9 +19,15 @@ else
 	echo "File zm.conf already moved"
 fi
 
+# Handle the zmeventnotification.ini file
 if [ -f /root/zmeventnotification.ini ]; then
 	echo "Moving zmeventnotification.ini"
-	mv /root/zmeventnotification.ini /config/zmeventnotification.ini
+	cp /root/zmeventnotification.ini /config/zmeventnotification.ini.default
+	if [ ! -f /config/zmeventnotification.ini ]; then
+		mv /root/zmeventnotification.ini /config/zmeventnotification.ini
+	else
+		rm -rf /root/zmeventnotification.ini
+	fi
 else
 	echo "File zmeventnotification.ini already moved"
 fi
@@ -59,6 +65,15 @@ else
 	cp /config/control/*.pl /usr/share/perl5/ZoneMinder/Control/ 2>/dev/null
 	chown root:root /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
 	chmod 644 /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
+fi
+
+# If hook folder exists, copy files into image
+if [ ! -d /config/hook ]; then
+	echo "Creating hook folder in config folder"
+	mkdir /config/hook
+else
+	echo "Copy hook files to /usr/bin/"
+	cp -p /config/hook/* /usr/bin/ 2>/dev/null
 fi
 
 # Copy conf files if there are any
@@ -100,11 +115,13 @@ chown -R mysql:mysql /var/lib/mysql
 chown -R $PUID:$PGID /config/conf
 chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
-chmod -R 666 /config/control
+chmod -R 666 /config/conf
+chown -R $PUID:$PGID /config/hook
+chmod -R 666 /config/hook
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 777 /config/ssmtp
-chown -R $PUID:$PGID /config/zmeventnotification.ini
-chmod -R 666 /config/zmeventnotification.ini
+chown -R $PUID:$PGID /config/zmeventnotification.*
+chmod -R 666 /config/zmeventnotification.*
 chown -R $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
 
