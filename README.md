@@ -28,6 +28,7 @@ Changes:
 
 2018-10-28
 - Fix weekly zmaudit cron job.
+- Remove hook permissions.
 
 2018-10-26
 - Change handling of the defaut zmeventnotification.ini file copyiing to /config.

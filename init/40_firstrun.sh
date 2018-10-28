@@ -117,7 +117,6 @@ chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
 chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/hook
-chmod -R 666 /config/hook
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 777 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.*
