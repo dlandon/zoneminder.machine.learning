@@ -26,6 +26,9 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2018-10-28
+- Fix weekly zmaudit cron job.
+
 2018-10-26
 - Change handling of the defaut zmeventnotification.ini file copyiing to /config.
 - Setup up 'hook' folder to copy files to the docker image for zmeventnotification 'hook' processing.
