@@ -10,7 +10,6 @@ docker run -d --name="Zoneminder" \
 -e SHMEM="50%" \
 -e PUID="99" \
 -e PGID="100" \
--e ADVANCED_SCRIPT="0" \
 -v "/mnt/cache/appdata/Zoneminder":"/config":rw \
 -v "/mnt/cache/appdata/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder
