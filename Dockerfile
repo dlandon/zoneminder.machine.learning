@@ -29,14 +29,8 @@ RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 RUN	rm /etc/mysql/my.cnf && \
 	cp /etc/mysql/mariadb.conf.d/50-server.cnf /etc/mysql/my.cnf && \
 	adduser www-data video && \
-	a2enmod php$PHP_VERS && \
-	a2enconf php$PHP_VERS-fpm && \
-	a2enmod cgi && \
-	a2enmod ssl && \
-	a2enmod rewrite && \
-	a2enmod expires && \
-	a2enmod headers && \
-	a2enconf zoneminder && \
+	a2enmod php$PHP_VERS proxy_fcgi ssl rewrite expires headers && \
+	a2enconf php$PHP_VERS-fpm zoneminder && \
 	echo "extension=apcu.so" > /etc/php/$PHP_VERS/mods-available/apcu.ini && \
 	echo "extension=mcrypt.so" > /etc/php/$PHP_VERS/mods-available/mcrypt.ini && \
 	perl -MCPAN -e "force install Net::WebSocket::Server" && \
