@@ -9,7 +9,6 @@ To run Zoneminder on unRAID:
 docker run -d --name="Zoneminder" \
 --net="bridge" \
 --privileged="true" \
--p 8080:80/tcp \
 -p 8443:443/tcp \
 -p 9000:9000/tcp \
 -e TZ="America/New_York" \
@@ -20,11 +19,14 @@ docker run -d --name="Zoneminder" \
 -v "/mnt/cache/appdata/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder
 
-To access the Zoneminder gui: http://IP:8080/zm or https://IP:8443/zm
+To access the Zoneminder gui: https://IP:8443/zm
 
 The zmNinja Event Notification Server is accessed at port 9000.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 Changes:
+
+2018-12-09
+- Remove http:// access.  You can only access Zoneminder with htps://.  A self signed certificate is generated for you.
 
 2018-11-14
 - Adjustment to apache2 modules.

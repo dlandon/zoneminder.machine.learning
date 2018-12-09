@@ -48,6 +48,9 @@ RUN	cd /root && \
 	chown -R www-data:www-data /usr/share/zoneminder/ && \
 	echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
 	sed -i "s|^;date.timezone =.*|date.timezone = ${TZ}|" /etc/php/$PHP_VERS/apache2/php.ini && \
+	sed -i "s|Listen 80|# Listen 80|" /etc/apache2/ports.conf && \
+	rm -f /etc/apache2/sites-enabled/000-default.conf && \
+	rm -f /etc/apache2/sites-available/000-default.conf && \
 	service mysql start && \
 	mysql -uroot < /usr/share/zoneminder/db/zm_create.sql && \
 	mysql -uroot -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';" && \
@@ -84,4 +87,4 @@ VOLUME \
 	["/config"] \
 	["/var/cache/zoneminder"]
 
-EXPOSE 80 443 9000
+EXPOSE 443 9000
