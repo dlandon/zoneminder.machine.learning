@@ -25,6 +25,9 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2018-12-25
+- Update zmNinja Event Notification Server to version 2.5.
+
 2018-12-09
 - Remove http:// access.  You can only access Zoneminder with htps://.  A self signed certificate is generated for you.
 
