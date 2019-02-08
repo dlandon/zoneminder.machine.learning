@@ -25,6 +25,9 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2019-02-08
+- Update zmNinja Event Notification Server to version 3.0.
+
 2019-01-26
 - Update zmNinja Event Notification Server configuration file.
 - Re-enable port 80 for special situations.
