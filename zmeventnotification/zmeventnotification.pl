@@ -41,7 +41,9 @@ use Time::HiRes qw/gettimeofday/;
 use Symbol qw(qualify_to_ref);
 use IO::Select;
 
-#use Data::Dump qw(dump);
+# debugging only
+#use Data::Dumper;
+
 # ==========================================================================
 #
 # Starting v1.0, configuration has moved to a separate file, please make sure
@@ -56,7 +58,7 @@ use IO::Select;
 # ==========================================================================
 
 
-my $app_version="3.0-docker";
+my $app_version="3.1-docker";
 
 # ==========================================================================
 #
@@ -88,7 +90,8 @@ use constant {
     DEFAULT_CUSTOMIZE_USE_CUSTOM_NOTIFICATION_SOUND => 0,
     DEFAULT_CUSTOMIZE_INCLUDE_PICTURE               => 0,
     DEFAULT_HOOK_KEEP_FRAME_MATCH_TYPE              => 1,
-    DEFAULT_HOOK_USE_HOOK_DESCRIPTION               => 0
+    DEFAULT_HOOK_USE_HOOK_DESCRIPTION               => 0,
+    DEFAULT_HOOK_STORE_FRAME_IN_ZM                  => 0,
 };
 
 
@@ -146,6 +149,7 @@ my $hook;
 my $use_hook_description;
 my $keep_frame_match_type;
 my $skip_monitors;
+my $store_frame_in_zm;
 
 my $picture_url;
 my $include_picture;
@@ -264,6 +268,7 @@ GetOptions(
   "hook-script=s"                  => \$hook,
   "use-hook-description!"          => \$use_hook_description,
   "keep-frame-match-type!"         => \$keep_frame_match_type,
+  "store_frame_in_zm!"             => \$store_frame_in_zm,
   "skip-monitors=s"                => \$skip_monitors,
 
   "picture-url=s"                  => \$picture_url,
@@ -339,6 +344,7 @@ $hook                         //= config_get_val($config, "hook", "hook_script")
 $use_hook_description         //= config_get_val($config, "hook", "use_hook_description", DEFAULT_HOOK_USE_HOOK_DESCRIPTION);
 $keep_frame_match_type        //= config_get_val($config, "hook", "keep_frame_match_type", DEFAULT_HOOK_KEEP_FRAME_MATCH_TYPE);
 $skip_monitors                //= config_get_val($config, "hook", "skip_monitors");
+$store_frame_in_zm            //= config_get_val($config, "hook", "store_frame_in_zm");
 
 
 my %ssl_push_opts = ();
@@ -411,6 +417,7 @@ Hook .......................... ${\(value_or_undefined($hook))}
 Use Hook Description........... ${\(true_or_false($use_hook_description))}
 Keep frame match type.......... ${\(true_or_false($keep_frame_match_type))}
 Skipped monitors............... ${\(value_or_undefined($skip_monitors))}
+Store Frame in ZM...............${\(true_or_false($store_frame_in_zm))}
 
 
 Picture URL ................... ${\(value_or_undefined($picture_url))}
@@ -852,7 +859,8 @@ sub deleteFCMToken
                        intlist => $intlist,
                        last_sent=>{},
                        platform => $platform,
-                       pushstate => $pushstate
+                       pushstate => $pushstate,
+                       extra_fields=>''
                       };
         
     }
@@ -1142,6 +1150,21 @@ sub processJobs
 }
 
 
+# returns extra fields associated to a connection
+sub getConnFields {
+    my $conn = shift;
+    my $matched = "";
+    foreach (@active_connections) {
+        if (exists $_->{conn} && $_->{conn} == $conn) {
+            $matched = $_->{extra_fields};
+            $matched = ' [' . $matched . '] ' if $matched;
+            last;
+            
+        }
+    }
+    return $matched;
+}
+
 # This runs at each tick to purge connections
 # that are inactive or have had an error
 # This also closes any connection that has not provided
@@ -1161,7 +1184,7 @@ sub checkConnection
                 if (exists $_->{conn})
                 {
                     my $conn = $_->{conn};
-                    printInfo ("Rejecting ".$conn->ip()." - authentication timeout");
+                    printInfo ("Rejecting ".$conn->ip().getConnFields($conn)." - authentication timeout");
                     $_->{state} = PENDING_DELETE;
                     my $str = encode_json({event => 'auth', type=>'',status=>'Fail', reason => 'NOAUTH'});
                     eval {$_->{conn}->send_utf8($str);};
@@ -1487,7 +1510,8 @@ sub initMQTT {
         monlist => "",
         intlist => "",
         last_sent=>{},
-	mqtt_conn=>$mqtt_connection,
+        extra_fields=>'',
+	    mqtt_conn=>$mqtt_connection,
     };
 }
 
@@ -1528,6 +1552,7 @@ sub initFCMTokens
                intlist => $intlist,
                last_sent=>{},
                platform => $platform,
+               extra_fields=>'',
                pushstate => $pushstate
               };
         
@@ -1820,7 +1845,18 @@ sub processAlarms {
                 printInfo ("Skipping hook processing because ".$alarm->{Name}."(".$alarm->{MonitorId}.") is in skip monitor list");
             }
             else {
-                my $cmd = $hook." ".$alarm->{EventId}." ".$alarm->{MonitorId}." \"".$alarm->{Name}."\"";
+                my $cmd = $hook." ".$alarm->{EventId}." ".$alarm->{MonitorId}." \"".$alarm->{Name}."\""." \"".$alarm->{Cause}."\"";
+                # new ZM 1.33 feature - lets me extract event path so I can store the hook detection image
+                if ($store_frame_in_zm) {
+                    if (!try_use ("ZoneMinder::Event")) {
+                        Error ("ZoneMinder::Event missing, you may be using an old version");
+                    } else {
+                        my $event = new ZoneMinder::Event($alarm->{EventId});
+                        $cmd = $cmd." \"".$event->Path()."\"";
+                        printInfo ("Adding event path:".$event->Path()." to hook for image storage");
+                    }
+                    
+                }
                 printInfo ("Invoking hook:".$cmd);
                 my $resTxt = `$cmd`;
                 my $resCode = $? >> 8;
@@ -1916,6 +1952,7 @@ sub initSocketServer
             printDebug("---------->onConnect START<--------------");
             my ($len) = scalar @active_connections;
             printInfo ("got a websocket connection from ".$conn->ip()." (". $len.") active connections");
+             #print Dumper($conn);
             $conn->on(
                 utf8 => sub {
                     printDebug("---------->onConnect msg START<--------------");
@@ -1927,8 +1964,18 @@ sub initSocketServer
                 handshake => sub {
                     my ($conn, $handshake) = @_;
                     printDebug("---------->onConnect:handshake START<--------------");
+                    my $fields="";
+
+                    # Stuff in more headers you want here over time
+                    if ($handshake->req->fields ) {
+                           my $f = $handshake->req->fields;
+                           #print Dumper($f);
+                           $fields = $fields." X-Forwarded-For:".$f->{"x-forwarded-for"} if $f->{"x-forwarded-for"};
+                           #$fields = $fields." host:".$f->{"host"} if $f->{"host"};
+                            
+                    }
+                    #print Dumper($handshake);
                     my $id = gettimeofday;
-                    printInfo ("Websockets: New Connection Handshake requested from ".$conn->ip().":".$conn->port()." state=pending auth, id=".$id);
                     my $connect_time = time();
                     push @active_connections, {
                                    type => WEB,
@@ -1941,15 +1988,17 @@ sub initSocketServer
                                    last_sent=>{},
                                    platform => "websocket",
                                    pushstate => '',
+                                   extra_fields=> $fields,
                                    badge => 0};
-                   
+                    printInfo ("Websockets: New Connection Handshake requested from ".$conn->ip().":".$conn->port().getConnFields($conn)." state=pending auth, id=".$id);
+                                      
                 printDebug("---------->onConnect:handshake END<--------------");
                 },
                 disconnect => sub
                 {
                     my ($conn, $code, $reason) = @_;
                     printDebug("---------->onConnect:disconnect START<--------------");
-                    printInfo ("Websocket remotely disconnected from ".$conn->ip());
+                    printInfo ("Websocket remotely disconnected from ".$conn->ip().getConnFields($conn));
                     foreach (@active_connections)
                     {
                         if ((exists $_->{conn}) && ($_->{conn}->ip() eq $conn->ip())  &&
@@ -1960,12 +2009,13 @@ sub initSocketServer
                             if ( $_->{token} eq '')
                             {
                                 $_->{state}=PENDING_DELETE;
-                                printInfo( "Marking ".$conn->ip()." for deletion as websocket closed remotely\n");
+                                printInfo( "Marking ".$conn->ip().getConnFields($conn)." for deletion as websocket closed remotely\n");
                             }
                             else
                             {
                                 
-                                printInfo( "Invaliding websocket, but NOT Marking ".$conn->ip()." for deletion as token ".$_->{token}." active\n");
+                                printInfo( "Invaliding websocket, but NOT Marking ".$conn->ip().getConnFields
+($conn)." for deletion as token ".$_->{token}." active\n");
                                 $_->{state}=INVALID_CONNECTION;
                             }
                         }
