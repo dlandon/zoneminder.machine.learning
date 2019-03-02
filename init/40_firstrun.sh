@@ -72,8 +72,16 @@ if [ ! -d /config/hook ]; then
 	echo "Creating hook folder in config folder"
 	mkdir /config/hook
 else
-	echo "Copy hook files to /usr/bin/"
-	cp -p /config/hook/* /usr/bin/ 2>/dev/null
+	echo "Copy hook files"
+	cp -p /config/hook/detect_* /usr/bin/ 2>/dev/null
+	cp -p /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
+fi
+
+# Create models folder if it doesn't exist
+if [ ! -d /config/hook/models ]; then
+	echo "Creating hook/models folder in config folder"
+	mkdir -p /config/hook/models/yolov3
+	mkdir -p /config/hook/models/tinyyolo
 fi
 
 # Copy conf files if there are any
@@ -83,6 +91,11 @@ if [ -d /config/conf ]; then
 	chown root:root /etc/zm/conf.d* 2>/dev/null
 	chmod 640 /etc/conf.d/* 2>/dev/null
 fi
+
+# Copy models folder(s) into the docker image
+rm -rf /var/lib/zmeventnotification/models
+cp -r /config/hook/models /var/lib/zmeventnotification/models
+chown -R www-data:www-data /var/lib/zmeventnotification/models
 
 echo "Creating symbolink links"
 # security certificate keys
@@ -117,6 +130,7 @@ chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
 chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/hook
+chmod -R 777 /config/hook
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 777 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.*
@@ -218,8 +232,9 @@ if [ -f /config/cron ]; then
 	crontab -l -u root | cat - /config/cron | crontab -u root -
 fi
 
-# copy the zmeventnotification.ini file to /etc
-cp /config/zmeventnotification.ini /etc/
+# copy the zmeventnotification.ini file to /etc/zm/
+cp /config/zmeventnotification.ini /etc/zm/
+chown www-data:www-data /etc/zm/zmeventnotification.ini
 
 # Fix memory issue
 echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/meminfo` bytes"

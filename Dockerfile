@@ -4,7 +4,7 @@ LABEL maintainer="dlandon"
 
 ENV	PHP_VERS="7.1"
 ENV ZM_VERS="1.32"
-ENV ZMEVENT_VERS="2.6"
+ENV ZMEVENT_VERS="3.2"
 
 ENV	SHMEM="50%" \
 	PUID="99" \
@@ -70,8 +70,9 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	mv /root/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf && \
 	mkdir /etc/apache2/ssl/ && \
 	chmod a+x /usr/bin/zmeventnotification.pl && \
-	mkdir /etc/private && \
-	chmod 777 /etc/private && \
+	mkdir -p /var/lib/zmeventnotification/push && \
+	mkdir -p /var/lib/zmeventnotification/images && \
+	chown -R www-data:www-data /var/lib/zmeventnotification/ && \
 	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf && \
 	echo "#!/bin/sh\n\n/usr/bin/zmaudit.pl -f" >> /etc/cron.weekly/zmaudit && \

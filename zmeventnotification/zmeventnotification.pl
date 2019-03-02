@@ -58,7 +58,7 @@ use IO::Select;
 # ==========================================================================
 
 
-my $app_version="3.1-docker";
+my $app_version="3.2-docker";
 
 # ==========================================================================
 #
@@ -73,14 +73,14 @@ my $app_version="3.1-docker";
 
 # configuration constants
 use constant {
-    DEFAULT_CONFIG_FILE                             => "/etc/zmeventnotification.ini",
+    DEFAULT_CONFIG_FILE                             => "/etc/zm/zmeventnotification.ini",
     DEFAULT_PORT                                    => 9000,
     DEFAULT_AUTH_ENABLE                             => 1,
     DEFAULT_AUTH_TIMEOUT                            => 20,
     DEFAULT_FCM_ENABLE                              => 1,
     DEFAULT_MQTT_ENABLE                             => 0,
     DEFAULT_MQTT_SERVER                             => '127.0.0.1',
-    DEFAULT_FCM_TOKEN_FILE                          => '/etc/private/tokens.txt',
+    DEFAULT_FCM_TOKEN_FILE                          => '/var/lib/zmeventnotification/push/tokens.txt',
     DEFAULT_SSL_ENABLE                              => 1,
     DEFAULT_CUSTOMIZE_VERBOSE                       => 0,
     DEFAULT_CUSTOMIZE_EVENT_CHECK_INTERVAL          => 5,
