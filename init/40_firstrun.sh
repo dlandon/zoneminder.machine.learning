@@ -84,6 +84,12 @@ if [ ! -d /config/hook/models ]; then
 	mkdir -p /config/hook/models/tinyyolo
 fi
 
+# Create known_faces folder if it doesn't exist
+if [ ! -d /config/hook/known_faces ]; then
+	echo "Creating hook/known_faces folder in config folder"
+	mkdir -p /config/hook/known_faces
+fi
+
 # Copy conf files if there are any
 if [ -d /config/conf ]; then
 	echo "Copy /config/conf/ scripts to /etc/zm/conf.d/"
@@ -96,6 +102,11 @@ fi
 rm -rf /var/lib/zmeventnotification/models
 cp -r /config/hook/models /var/lib/zmeventnotification/models
 chown -R www-data:www-data /var/lib/zmeventnotification/models
+
+# Copy known_faces folder into the docker image
+rm -rf /var/lib/zmeventnotification/known_faces
+cp -r /config/hook/known_faces /var/lib/zmeventnotification/known_faces
+chown -R www-data:www-data /var/lib/zmeventnotification/known_faces
 
 echo "Creating symbolink links"
 # security certificate keys
