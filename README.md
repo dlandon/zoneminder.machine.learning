@@ -27,6 +27,7 @@ Changes:
 
 2019-03-04
 - Additional work to support the zmeventnotification server face recognition.
+- Fix typos.
 
 2019-03-02
 - Update zmNinja Event Notification Server to version 3.2.  Many changes to the paths for zmeventnotification and hook files.

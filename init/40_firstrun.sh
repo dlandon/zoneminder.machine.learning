@@ -139,7 +139,7 @@ chown -R mysql:mysql /var/lib/mysql
 chown -R $PUID:$PGID /config/conf
 chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
-chmod -R 666 /config/conf
+chmod -R 666 /config/control
 chown -R $PUID:$PGID /config/hook
 chmod -R 777 /config/hook
 chown -R $PUID:$PGID /config/ssmtp
