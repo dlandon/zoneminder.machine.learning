@@ -62,7 +62,7 @@ if [ ! -d /config/control ]; then
 	mkdir /config/control
 else
 	echo "Copy /config/control/ scripts to /usr/share/perl5/ZoneMinder/Control/"
-	cp /config/control/*.pl /usr/share/perl5/ZoneMinder/Control/ 2>/dev/null
+	cp /config/control/*.pm /usr/share/perl5/ZoneMinder/Control/ 2>/dev/null
 	chown root:root /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
 	chmod 644 /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
 fi
