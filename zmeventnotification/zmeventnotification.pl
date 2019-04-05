@@ -618,7 +618,7 @@ sub checkNewEvents()
                 # It is possible we missed STATE_IDLE due to b2b events, so we may need to process it here 
                 # as well
 
-                if ($last_event_for_monitors{$monitor->{Id}}{"state"}== "recording") 
+                if ($last_event_for_monitors{$monitor->{Id}}{"state"} eq "recording") 
                 {
                    my $hooktext = $last_event_for_monitors{$monitor->{Id}}{"hook_text"};
                    if ($hooktext) {
@@ -1041,7 +1041,7 @@ sub processJobs
                 # b) that mid is now idling
 
                 if ( ($last_event_for_monitors{$mid}{"eid"} != $eid) ||
-                     ($last_event_for_monitors{$mid}{"state"} == "idle")) {
+                     ($last_event_for_monitors{$mid}{"state"} eq "idle")) {
                          printDebug ("HOOK: script for eid:$eid returned after the alarm closed, so writing hook text:$desc now...");
                          updateEventinZmDB($eid, $desc);
                 } 
