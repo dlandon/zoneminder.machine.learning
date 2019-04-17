@@ -58,7 +58,7 @@ use IO::Select;
 # ==========================================================================
 
 
-my $app_version="3.3-Docker";
+my $app_version="3.4-Docker";
 
 # ==========================================================================
 #
@@ -1794,8 +1794,15 @@ sub processAlarms {
                 next if ($resCode !=0);
                 if ($use_hook_description) {
                   
-                    $alarm->{Cause} = $resTxt;
-                    # This updated the ZM DB with the detected description
+                    # lets append it to any existing motion notes
+                    # note that this is in the fork. We are only passing hook text
+                    # to parent, so it can be appended to the full motion text on event close
+                    $alarm->{Cause} = $resTxt." ".$alarm->{Cause};
+                    printDebug ("after appending motion text, alarm->cause is now:". $alarm->{Cause});
+		       
+                    # This updates the ZM DB with the detected description
+                    # we are writing resTxt not alarm cause which is only detection text
+                    # when we write to DB, we will add the latest notes, which may have more zones
                     print WRITER "event_description--TYPE--".$alarm->{MonitorId}."--SPLIT--".$alarm->{EventId}."--SPLIT--".$resTxt."\n";
                 }
            } 
