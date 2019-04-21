@@ -3,8 +3,8 @@ FROM dlandon/baseimage
 LABEL maintainer="dlandon"
 
 ENV	PHP_VERS="7.1"
-ENV ZM_VERS="1.32"
-ENV ZMEVENT_VERS="3.3"
+ENV	ZM_VERS="1.32"
+ENV	ZMEVENT_VERS="3.5"
 
 ENV	SHMEM="50%" \
 	PUID="99" \
@@ -15,7 +15,7 @@ COPY defaults/ /root/
 COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 COPY zmeventnotification/zmeventnotification.ini /root/
 
-RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
+RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	add-apt-repository ppa:ondrej/php && \
 	apt-get update && \
 	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \

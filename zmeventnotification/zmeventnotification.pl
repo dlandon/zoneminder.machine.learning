@@ -58,7 +58,7 @@ use IO::Select;
 # ==========================================================================
 
 
-my $app_version="3.4-Docker";
+my $app_version="3.5-Docker";
 
 # ==========================================================================
 #
@@ -610,7 +610,8 @@ sub checkNewEvents()
                  ]
             );
 
-        if ($state == STATE_ALARM || $state == STATE_ALERT)
+	    #if ($state == STATE_ALARM || $state == STATE_ALERT)
+        if ($state == STATE_ALARM)
         {
             if ( !defined($monitor->{LastEvent})
                  || ($last_event != $last_event_for_monitors{$monitor->{Id}}{"eid"}))
