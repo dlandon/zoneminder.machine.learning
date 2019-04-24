@@ -252,6 +252,23 @@ echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/me
 umount /dev/shm
 mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=${SHMEM} tmpfs /dev/shm
 
+# Install hook packages
+if [ "$INSTALL_HOOK" == "1" ] && [ -f /root/setup.py ]; then
+	echo "Install hook processing..."
+
+	# Python modules needed for hook processing
+	apt-get -y install python-pip cmake
+	apt-get -y install libsm6 libxext6 libxrender1 libfontconfig1
+	pip install numpy opencv-python imutils configparser Shapely future
+	python /root/setup.py install
+	rm -f /root/setup.py
+
+	# Install for face recognition
+	pip install face_recognition
+
+	echo "Hook processing installed"
+fi
+
 echo "Starting services"
 service mysql start
 
