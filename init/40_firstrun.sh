@@ -73,7 +73,7 @@ if [ ! -d /config/hook ]; then
 	mkdir /config/hook
 else
 	echo "Copy hook files"
-	cp -p /config/hook/detect_* /usr/bin/ 2>/dev/null
+	cp -p /config/hook/detect* /usr/bin/ 2>/dev/null
 	cp -p /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
 fi
 
