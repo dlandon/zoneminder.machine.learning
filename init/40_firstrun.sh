@@ -239,12 +239,14 @@ umount /dev/shm
 mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=${SHMEM} tmpfs /dev/shm
 
 # Install hook packages
-if [ "$INSTALL_HOOK" == "1" ] && [ -f /usr/bin/setup.py ]; then
+if [ "$INSTALL_HOOK" == "1" ]; then
 	echo "Install hook processing..."
 
-	# Python modules needed for hook processing
-	apt-get -y install python-pip cmake
-	pip install numpy opencv-python imutils configparser Shapely future
+	if [ -f /usr/bin/setup.py ]; then
+		# Python modules needed for hook processing
+		apt-get -y install python-pip cmake
+		pip install numpy opencv-python imutils configparser Shapely future
+	fi
 
 	# Copy models folder(s) into the docker image
 	rm -rf /var/lib/zmeventnotification/models
@@ -261,19 +263,23 @@ if [ "$INSTALL_HOOK" == "1" ] && [ -f /usr/bin/setup.py ]; then
 	chmod +x /usr/bin/detect* 2>/dev/null
 	cp -p /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
 
-	# Run setup
-	cd /usr/bin/
-	setup.py install
-	rm /usr/bin/setup.py
+	if [ "$INSTALL_FACE" == "1" ] && [ -f /usr/bin/setup.py ]; then
+		# Install for face recognition
+		apt-get -y install libopenblas-dev liblapack-dev libblas-dev
+ 		pip install face_recognition
+	fi
 
-	# Install for face recognition
-	apt-get install libopenblas-dev liblapack-dev libblas-dev
- 	pip install face_recognition
+	if [ -f /usr/bin/setup.py ]; then
+		# Run setup
+		cd /usr/bin/
+		setup.py install
+		rm /usr/bin/setup.py
+	fi
 
 	echo "Hook processing installed"
 fi
 
-echo "Starting services"
+echo "Starting services..."
 service mysql start
 
 # Update the database if necessary
