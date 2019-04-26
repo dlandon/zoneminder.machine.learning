@@ -71,10 +71,6 @@ fi
 if [ ! -d /config/hook ]; then
 	echo "Creating hook folder in config folder"
 	mkdir /config/hook
-else
-	echo "Copy hook files"
-	cp -p /config/hook/detect* /usr/bin/ 2>/dev/null
-	cp -p /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
 fi
 
 # Create models folder if it doesn't exist
@@ -97,16 +93,6 @@ if [ -d /config/conf ]; then
 	chown root:root /etc/zm/conf.d* 2>/dev/null
 	chmod 640 /etc/conf.d/* 2>/dev/null
 fi
-
-# Copy models folder(s) into the docker image
-rm -rf /var/lib/zmeventnotification/models
-cp -r /config/hook/models /var/lib/zmeventnotification/models
-chown -R www-data:www-data /var/lib/zmeventnotification/models
-
-# Copy known_faces folder into the docker image
-rm -rf /var/lib/zmeventnotification/known_faces
-cp -r /config/hook/known_faces /var/lib/zmeventnotification/known_faces
-chown -R www-data:www-data /var/lib/zmeventnotification/known_faces
 
 echo "Creating symbolink links"
 # security certificate keys
@@ -253,18 +239,36 @@ umount /dev/shm
 mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=${SHMEM} tmpfs /dev/shm
 
 # Install hook packages
-if [ "$INSTALL_HOOK" == "1" ] && [ -f /root/setup.py ]; then
+if [ "$INSTALL_HOOK" == "1" ] && [ -f /usr/bin/setup.py ]; then
 	echo "Install hook processing..."
 
 	# Python modules needed for hook processing
 	apt-get -y install python-pip cmake
-	apt-get -y install libsm6 libxext6 libxrender1 libfontconfig1
 	pip install numpy opencv-python imutils configparser Shapely future
-	python /root/setup.py install
-	rm -f /root/setup.py
+
+	# Copy models folder(s) into the docker image
+	rm -rf /var/lib/zmeventnotification/models
+	cp -r /config/hook/models /var/lib/zmeventnotification/models
+	chown -R www-data:www-data /var/lib/zmeventnotification/models
+
+	# Copy known_faces folder into the docker image
+	rm -rf /var/lib/zmeventnotification/known_faces
+	cp -r /config/hook/known_faces /var/lib/zmeventnotification/known_faces
+	chown -R www-data:www-data /var/lib/zmeventnotification/known_faces
+
+	# Copy hook files
+	cp -p /config/hook/detect* /usr/bin/ 2>/dev/null
+	chmod +x /usr/bin/detect* 2>/dev/null
+	cp -p /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
+
+	# Run setup
+	cd /usr/bin/
+	setup.py install
+	rm /usr/bin/setup.py
 
 	# Install for face recognition
-	pip install face_recognition
+	apt-get install libopenblas-dev liblapack-dev libblas-dev
+ 	pip install face_recognition
 
 	echo "Hook processing installed"
 fi

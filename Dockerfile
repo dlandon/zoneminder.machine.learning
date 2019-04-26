@@ -14,7 +14,8 @@ COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
 COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 COPY zmeventnotification/zmeventnotification.ini /root/
-COPY zmeventnotification/setup.py /root/
+COPY zmeventnotification/setup.py /usr/bin/
+COPY zmeventnotification/zmes_hook_helpers/ /usr/bin/zmes_hook_helpers/
 
 RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	add-apt-repository ppa:ondrej/php && \
@@ -70,7 +71,8 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	mv /root/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf && \
 	mkdir /etc/apache2/ssl/ && \
 	chmod a+x /usr/bin/zmeventnotification.pl && \
-	chmod a+x /root/setup.py && \
+	chmod a+x /usr/bin/setup.py && \
+	chmod a+x /usr/bin/zmes_hook_helpers/* && \
 	mkdir -p /var/lib/zmeventnotification/images && \
 	chown -R www-data:www-data /var/lib/zmeventnotification/ && \
 	chmod -R +x /etc/my_init.d/ && \
