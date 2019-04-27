@@ -39,7 +39,8 @@ RUN	rm /etc/mysql/my.cnf && \
 	perl -MCPAN -e "force install Net::WebSocket::Server" && \
 	perl -MCPAN -e "force install LWP::Protocol::https" && \
 	perl -MCPAN -e "force install Config::IniFiles" && \
-	perl -MCPAN -e "force install Net::MQTT::Simple"
+	perl -MCPAN -e "force install Net::MQTT::Simple" && \
+	perl -MCPAN -e "force install Net::MQTT::Simple::Auth"
 
 RUN	cd /root && \
 	wget www.andywilcock.com/code/cambozola/cambozola-latest.tar.gz && \
