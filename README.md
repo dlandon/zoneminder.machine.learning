@@ -31,6 +31,9 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2019-04-27
+- Add Net::MQTT::Simple::Auth perl library.
+
 2019-04-26
 - Add "INSTALL_FACE" environment variable to load face recognition package.
 
