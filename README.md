@@ -31,6 +31,9 @@ The zmNinja Event Notification Server is accessed at port 9000.  Security with a
 
 Changes:
 
+2019-05-12
+- Update zmNinja Event Notification Server to version 3.7.
+
 2019-04-27
 - Add Net::MQTT::Simple::Auth perl library.
 
