@@ -75,11 +75,6 @@ config_vals = {
             'default': 'no',
             'type': 'string'
         },
-        'log_level':{
-            'section': 'general',
-            'default': 'info',
-            'type': 'string'
-        },
         'allow_self_signed':{
             'section': 'general',
             'default': 'yes',
@@ -153,6 +148,12 @@ config_vals = {
             'default': '/var/lib/zmeventnotification/models/tinyyolo/yolov3-tiny.txt',
             'type': 'string'
         },
+
+        'yolo_min_confidence': {
+            'section': 'yolo',
+            'default': '0.4',
+            'type': 'float'
+        },
         
         # HOG
         'stride':{
@@ -198,6 +199,11 @@ config_vals = {
             'default': '/var/lib/zmeventnotification/known_faces',
             'type': 'string',
         },
+        'unknown_face_name':{
+            'section': 'face',
+            'default': 'unknown face',
+            'type': 'string',
+        },
 
         # generic ALPR
         'alpr_service': {
@@ -219,6 +225,12 @@ config_vals = {
             'section': 'alpr',
             'type': 'string',
             'default': 'yes',
+        },
+
+         'alpr_pattern':{
+            'section': 'general',
+            'default': '.*',
+            'type': 'string'
         },
 
         # Plate recognition specific
