@@ -244,8 +244,8 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 
 	if [ -f /usr/bin/setup.py ]; then
 		# Python modules needed for hook processing
-		apt-get -y install python-pip cmake
-		pip install numpy opencv-python imutils configparser Shapely future
+		apt-get -y install python3-pip cmake
+		pip3 install numpy opencv-python imutils configparser Shapely future
 	fi
 
 	# Copy models folder(s) into the docker image
@@ -266,7 +266,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	if [ "$INSTALL_FACE" == "1" ] && [ -f /usr/bin/setup.py ]; then
 		# Install for face recognition
 		apt-get -y install libopenblas-dev liblapack-dev libblas-dev
- 		pip install face_recognition
+ 		pip3 install face_recognition
 	fi
 
 	if [ -f /usr/bin/setup.py ]; then
