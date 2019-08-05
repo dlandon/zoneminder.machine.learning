@@ -245,7 +245,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	if [ -f /usr/bin/setup.py ]; then
 		# Python modules needed for hook processing
 		apt-get -y install python3-pip cmake
-		pip3 install numpy opencv-python imutils configparser Shapely future
+		pip3 install numpy opencv-python imutils configparser Shapely future pyzmutils requests
 	fi
 
 	# Copy models folder(s) into the docker image
