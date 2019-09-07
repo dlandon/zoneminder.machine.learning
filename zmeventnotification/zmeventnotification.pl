@@ -58,7 +58,7 @@ use IO::Select ;
 # ==========================================================================
 
 
-my $app_version="4.1-Docker";
+my $app_version="4.2-Docker";
 
 
 # ==========================================================================
@@ -182,7 +182,7 @@ Usage: zmeventnotification.pl [OPTION]...
 
   --help                              Print this page.
 
-  --config=FILE                       Read options from configuration file (default: /etc/zmeventnotification.ini).
+  --config=FILE                       Read options from configuration file (default: /etc/zm/zmeventnotification.ini).
                                       Any CLI options used below will override config settings.
 
   --check-config                      Print configuration and exit.
@@ -1177,28 +1177,34 @@ sub processJobs {
                         . " description:"
                         . $desc ) ;
 
+		printInfo("Force updating event $eid with desc:$desc");
+	        updateEventinZmDB( $eid, $desc ) ;
+		# Edited Sep 4 2019: Lets write it immediately
+		# There are issues with post writing I haven't figured out yet
+		# Should not be an issue - we add to front, while new notes go to the end
+		#
                 # If the hook took too long and the alarm already closed,
                 # we need to handle it here. Two situations:
                 # a) that mid is now handling a new alarm
                 # b) that mid is now idling
 
-                if (   ( $last_event_for_monitors{ $mid }{ "eid" } != $eid )
-                    || ( $last_event_for_monitors{ $mid }{ "state" } eq "idle" )
-                    ) {
-                    printDebug(
-                        "HOOK: script for eid:$eid returned after the alarm closed, so writing hook text:$desc now..."
-                        ) ;
-                    updateEventinZmDB( $eid, $desc ) ;
-                    $last_event_for_monitors{ $mid }{ "hook_text" } = undef ;
-                    }
+		#if (   ( $last_event_for_monitors{ $mid }{ "eid" } != $eid )
+		#    || ( $last_event_for_monitors{ $mid }{ "state" } eq "idle" )
+		#    ) {
+		#    printDebug(
+		#        "HOOK: script for eid:$eid returned after the alarm closed, so writing hook text:$desc now..."
+		#        ) ;
+		#    updateEventinZmDB( $eid, $desc ) ;
+		#    $last_event_for_monitors{ $mid }{ "hook_text" } = undef ;
+		#    }
 
             #  hook returned before the alarm closed, so we will catch it in the
             # main loop
-                else {
-                    $last_event_for_monitors{ $mid }{ "hook_text" } = $desc ;
-                    }
+	    # else {
+	    #        $last_event_for_monitors{ $mid }{ "hook_text" } = $desc ;
+	    #        }
 
-                }
+	    }
 
         # marks the latest time an event was sent out. Needed for interval mgmt.
             elsif ( $job eq "timestamp" ) {
@@ -1680,10 +1686,10 @@ sub initMQTT {
 # Note this does not actually connect to the MQTT server. That happens later during publish
     if ( defined $mqtt_username && defined $mqtt_password ) {
         if ( $mqtt_connection = Net::MQTT::Simple->new( $mqtt_server ) ) {
-            $mqtt_connection->login( $mqtt_username, $mqtt_password ) ;
-
             # Setting up allow insecure connections
             $ENV{ 'MQTT_SIMPLE_ALLOW_INSECURE_LOGIN' } = 'true' ;
+            
+            $mqtt_connection->login( $mqtt_username, $mqtt_password ) ;
             printInfo( "Intialized MQTT with auth" ) ;
             }
         }

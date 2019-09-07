@@ -15,12 +15,12 @@ config_vals = {
         },
         'user':{
             'section': 'general',
-            'default': 'admin',
+            'default': None,
             'type': 'string'
         },
         'password':{
             'section': 'general',
-            'default': 'admin',
+            'default': None,
             'type': 'string'
         },
         'basic_user':{
@@ -48,7 +48,11 @@ config_vals = {
             'default': 'no',
             'type': 'string'
         },
-
+        'past_det_max_diff_area':{
+            'section': 'general',
+            'default': '5%',
+            'type': 'string'
+        },
         'frame_id':{
             'section': 'general',
             'default': 'snapshot',
