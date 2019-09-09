@@ -15,15 +15,80 @@ docker run -d --name="Zoneminder" \
 -e SHMEM="50%" \
 -e PUID="99" \
 -e PGID="100" \
+-e INSTALL_HOOK="0" \
+-e INSTALL_FACE="0" \
 -v "/mnt/cache/appdata/Zoneminder":"/config":rw \
 -v "/mnt/cache/appdata/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder
+
+Set INSTALL_HOOK="1" to install the hook processing packages and run setup.py to prepare the hook processing.
+
+Set INSTALL_FACE="1" to install face recognition packages.
 
 To access the Zoneminder gui: https://IP:8443/zm
 
 The zmNinja Event Notification Server is accessed at port 9000.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 Changes:
+
+2019-09-05
+- Fix update script.
+
+2019-08-05
+- Added pyzmutils and requests modules for hook processing.
+
+2019-08-03
+- Use pip3 for setup.py install of hook processing.
+
+2019-07-30
+- Update zmNinja Event Notification Server to version 4.1.
+
+2019-07-19
+- Update zmNinja Event Notification Server to version 3.9.
+
+2019-06-09
+- Update zmNinja Event Notification Server to version 3.8.
+
+2019-05-12
+- Update zmNinja Event Notification Server to version 3.7.
+
+2019-04-27
+- Add Net::MQTT::Simple::Auth perl library.
+
+2019-04-26
+- Add "INSTALL_FACE" environment variable to load face recognition package.
+
+2019-04-25
+- Add zmes_hook_helpers to docker image and change the hook installation.
+
+2019-04-24
+- Update zmNinja Event Notification Server to version 3.6.
+- Add "INSTALL_HOOK" environment variable to load packages and run 'setup.py' for hook processing.
+
+2019-04-21
+- Update zmNinja Event Notification Server to version 3.5.
+
+2019-04-16
+- Update zmNinja Event Notification Server to version 3.4.
+
+2019-04-05
+- Fix: Minor adjustments to zmeventnotification.
+
+2019-03-30
+- Fix: Control file copy was copying the wrong file extension.
+
+2019-03-27
+- Add: Install vlc packages.
+
+2019-03-25
+- Update zmNinja Event Notification Server to version 3.3.
+
+2019-03-04
+- Additional work to support the zmeventnotification server face recognition.
+- Fix typos.
+
+2019-03-02
+- Update zmNinja Event Notification Server to version 3.2.  Many changes to the paths for zmeventnotification and hook files.
 
 2019-02-21
 - Update zmNinja Event Notification Server to version 3.1.

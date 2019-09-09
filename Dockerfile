@@ -3,8 +3,8 @@ FROM sgarzarella/baseimage-armhf
 MAINTAINER Stefano <stefano.garzarella@gmail.com>
 
 ENV	PHP_VERS="7.1"
-ENV ZM_VERS="1.32"
-ENV ZMEVENT_VERS="2.6"
+ENV	ZM_VERS="1.32"
+ENV	ZMEVENT_VERS="4.2"
 
 ENV	SHMEM="50%" \
 	PUID="99" \
@@ -14,18 +14,22 @@ COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
 COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 COPY zmeventnotification/zmeventnotification.ini /root/
+COPY zmeventnotification/setup.py /usr/bin/
+COPY zmeventnotification/zmes_hook_helpers/ /usr/bin/zmes_hook_helpers/
 
-RUN add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
+RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	add-apt-repository ppa:ondrej/php && \
 	apt-get update && \
 	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \
-	apt-get -y dist-upgrade && \
+	apt-get -y dist-upgrade -o Dpkg::Options::="--force-confold" && \
 	apt-get -y install apache2 mariadb-server && \
 	apt-get -y install ssmtp mailutils net-tools libav-tools wget sudo make && \
 	apt-get -y install php$PHP_VERS php$PHP_VERS-fpm libapache2-mod-php$PHP_VERS php$PHP_VERS-mysql php$PHP_VERS-gd && \
 	apt-get -y install libcrypt-mysql-perl libyaml-perl libjson-perl && \
-	apt-get -y install zoneminder
+	apt-get -y install --no-install-recommends libvlc-dev libvlccore-dev vlc
 
+RUN	apt-get -y install zoneminder
+	
 RUN	rm /etc/mysql/my.cnf && \
 	cp /etc/mysql/mariadb.conf.d/50-server.cnf /etc/mysql/my.cnf && \
 	adduser www-data video && \
@@ -36,7 +40,8 @@ RUN	rm /etc/mysql/my.cnf && \
 	perl -MCPAN -e "force install Net::WebSocket::Server" && \
 	perl -MCPAN -e "force install LWP::Protocol::https" && \
 	perl -MCPAN -e "force install Config::IniFiles" && \
-	perl -MCPAN -e "force install Net::MQTT::Simple"
+	perl -MCPAN -e "force install Net::MQTT::Simple" && \
+	perl -MCPAN -e "force install Net::MQTT::Simple::Auth"
 
 RUN	cd /root && \
 	wget www.andywilcock.com/code/cambozola/cambozola-latest.tar.gz && \
@@ -48,8 +53,6 @@ RUN	cd /root && \
 	chown -R www-data:www-data /usr/share/zoneminder/ && \
 	echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
 	sed -i "s|^;date.timezone =.*|date.timezone = ${TZ}|" /etc/php/$PHP_VERS/apache2/php.ini && \
-	rm -f /etc/apache2/sites-enabled/000-default.conf && \
-	rm -f /etc/apache2/sites-available/000-default.conf && \
 	service mysql start && \
 	mysql -uroot < /usr/share/zoneminder/db/zm_create.sql && \
 	mysql -uroot -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';" && \
@@ -70,8 +73,10 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	mv /root/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf && \
 	mkdir /etc/apache2/ssl/ && \
 	chmod a+x /usr/bin/zmeventnotification.pl && \
-	mkdir /etc/private && \
-	chmod 777 /etc/private && \
+	chmod a+x /usr/bin/setup.py && \
+	chmod a+x /usr/bin/zmes_hook_helpers/* && \
+	mkdir -p /var/lib/zmeventnotification/images && \
+	chown -R www-data:www-data /var/lib/zmeventnotification/ && \
 	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf && \
 	echo "#!/bin/sh\n\n/usr/bin/zmaudit.pl -f" >> /etc/cron.weekly/zmaudit && \

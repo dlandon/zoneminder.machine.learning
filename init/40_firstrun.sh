@@ -62,7 +62,7 @@ if [ ! -d /config/control ]; then
 	mkdir /config/control
 else
 	echo "Copy /config/control/ scripts to /usr/share/perl5/ZoneMinder/Control/"
-	cp /config/control/*.pl /usr/share/perl5/ZoneMinder/Control/ 2>/dev/null
+	cp /config/control/*.pm /usr/share/perl5/ZoneMinder/Control/ 2>/dev/null
 	chown root:root /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
 	chmod 644 /usr/share/perl5/ZoneMinder/Control/* 2>/dev/null
 fi
@@ -71,9 +71,19 @@ fi
 if [ ! -d /config/hook ]; then
 	echo "Creating hook folder in config folder"
 	mkdir /config/hook
-else
-	echo "Copy hook files to /usr/bin/"
-	cp -p /config/hook/* /usr/bin/ 2>/dev/null
+fi
+
+# Create models folder if it doesn't exist
+if [ ! -d /config/hook/models ]; then
+	echo "Creating hook/models folder in config folder"
+	mkdir -p /config/hook/models/yolov3
+	mkdir -p /config/hook/models/tinyyolo
+fi
+
+# Create known_faces folder if it doesn't exist
+if [ ! -d /config/hook/known_faces ]; then
+	echo "Creating hook/known_faces folder in config folder"
+	mkdir -p /config/hook/known_faces
 fi
 
 # Copy conf files if there are any
@@ -115,14 +125,18 @@ chown -R mysql:mysql /var/lib/mysql
 chown -R $PUID:$PGID /config/conf
 chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
-chmod -R 666 /config/conf
+chmod -R 666 /config/control
 chown -R $PUID:$PGID /config/hook
+chmod -R 777 /config/hook
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 777 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.*
 chmod -R 666 /config/zmeventnotification.*
 chown -R $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
+chown -R www-data:www-data /config/push
+chmod 755 /config/push
+chmod 644 /config/push/*
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
@@ -218,15 +232,57 @@ if [ -f /config/cron ]; then
 	crontab -l -u root | cat - /config/cron | crontab -u root -
 fi
 
-# copy the zmeventnotification.ini file to /etc
-cp /config/zmeventnotification.ini /etc/
+# copy the zmeventnotification.ini file to /etc/zm/
+cp /config/zmeventnotification.ini /etc/zm/
+chown www-data:www-data /etc/zm/zmeventnotification.ini
 
 # Fix memory issue
 echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/meminfo` bytes"
 umount /dev/shm
 mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=${SHMEM} tmpfs /dev/shm
 
-echo "Starting services"
+# Install hook packages
+if [ "$INSTALL_HOOK" == "1" ]; then
+	echo "Install hook processing..."
+
+	if [ -f /usr/bin/setup.py ]; then
+		# Python modules needed for hook processing
+		apt-get -y install python3-pip cmake
+		pip3 install numpy opencv-python imutils configparser Shapely future pyzmutils requests
+	fi
+
+	# Copy models folder(s) into the docker image
+	rm -rf /var/lib/zmeventnotification/models
+	cp -r /config/hook/models /var/lib/zmeventnotification/models
+	chown -R www-data:www-data /var/lib/zmeventnotification/models
+
+	# Copy known_faces folder into the docker image
+	rm -rf /var/lib/zmeventnotification/known_faces
+	cp -r /config/hook/known_faces /var/lib/zmeventnotification/known_faces
+	chown -R www-data:www-data /var/lib/zmeventnotification/known_faces
+
+	# Copy hook files
+	cp -p /config/hook/detect* /usr/bin/ 2>/dev/null
+	chmod +x /usr/bin/detect* 2>/dev/null
+	cp -p /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
+
+	if [ "$INSTALL_FACE" == "1" ] && [ -f /usr/bin/setup.py ]; then
+		# Install for face recognition
+		apt-get -y install libopenblas-dev liblapack-dev libblas-dev
+ 		pip3 install face_recognition
+	fi
+
+	if [ -f /usr/bin/setup.py ]; then
+		# Run setup
+		cd /usr/bin/
+		setup.py install
+		rm /usr/bin/setup.py
+	fi
+
+	echo "Hook processing installed"
+fi
+
+echo "Starting services..."
 service mysql start
 
 # Update the database if necessary
