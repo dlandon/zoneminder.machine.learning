@@ -17,19 +17,22 @@ docker run -d --name="Zoneminder" \
 -e PGID="100" \
 -e INSTALL_HOOK="0" \
 -e INSTALL_FACE="0" \
--v "/mnt/cache/appdata/Zoneminder":"/config":rw \
--v "/mnt/cache/appdata/Zoneminder/data":"/var/cache/zoneminder":rw \
+-v "/mnt/Zoneminder":"/config":rw \
+-v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder
 
 Set INSTALL_HOOK="1" to install the hook processing packages and run setup.py to prepare the hook processing.
 
-Set INSTALL_FACE="1" to install face recognition packages.
+Set INSTALL_FACE="1" to install face recognition packages.  The initial installation can take a long time.
 
 To access the Zoneminder gui: https://IP:8443/zm
 
 The zmNinja Event Notification Server is accessed at port 9000.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 Changes:
+
+2019-09-14
+- Update README to make it more generic.
 
 2019-09-05
 - Fix update script.
