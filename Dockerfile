@@ -16,6 +16,7 @@ COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 COPY zmeventnotification/zmeventnotification.ini /root/
 COPY zmeventnotification/objectconfig.ini /root/
 COPY zmeventnotification/detect_wrapper.sh /root/
+COPY zmeventnotification/detect.py /root/
 COPY zmeventnotification/setup.py /usr/bin/
 COPY zmeventnotification/zmes_hook_helpers/ /usr/bin/zmes_hook_helpers/
 

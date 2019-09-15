@@ -227,8 +227,8 @@ if [ -f /config/cron ]; then
 	crontab -l -u root | cat - /config/cron | crontab -u root -
 fi
 
-# copy the zmeventnotification.ini file to /etc/zm/
-cp /config/zmeventnotification.ini /etc/zm/
+# Symbolink for /config/zmeventnotification.ini
+ln -sf /config/zmeventnotification.ini /etc/zm/zmeventnotification.ini
 chown www-data:www-data /etc/zm/zmeventnotification.ini
 
 # Fix memory issue
@@ -283,14 +283,17 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	# Handle the detect_wrapper.sh file
 	if [ -f /root/detect_wrapper.sh ]; then
 		echo "Moving detect_wrapper.sh"
-		cp /root/detect_wrapper.sh /config/hook/detect_wrapper.sh.default
-		if [ ! -f /config/hook/detect_wrapper.sh ]; then
-			mv /root/detect_wrapper.sh /config/hook/detect_wrapper.sh
-		else
-			rm -rf /root/detect_wrapper.sh
-		fi
+		mv /root/detect_wrapper.sh /config/hook/detect_wrapper.sh
 	else
 		echo "File detect_wrapper.sh already moved"
+	fi
+
+	# Handle the detect.py file
+	if [ -f /root/detect.py ]; then
+		echo "Moving detect.py"
+		mv /root/detect.py /config/hook/detect.py
+	else
+		echo "File detect.py already moved"
 	fi
 
 	# Symbolic link for models in /config
