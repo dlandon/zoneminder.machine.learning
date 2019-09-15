@@ -66,7 +66,7 @@ The zmNinja Event Notification Server is accessed at port `9000`.  Security with
 
 #### Change Log
 
-2019-09-14
+2019-09-15
 - Update README to make it more generic.
 - Add INSTALL_YOLO and INSTALL_TINY_YOLO environment variables to download the model files for zmeventserver when hook processing is enabled.
 - Update zmNinja Event Notification Server to version 4.2.
