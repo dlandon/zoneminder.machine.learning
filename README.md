@@ -1,10 +1,16 @@
-# Zoneminder 1.32 for Unraid
+# Zoneminder 1.32 Docker
 
 The configuration settings that are needed for this implementation of Zoneminder are pre-applied and do not need to be changed on the first run of Zoneminder.
 
 This verson will now upgrade from previous versions.
 
-To run Zoneminder on unRAID:
+Install the docker by going to a command line and enter the command:
+
+docker pull dlandon/zoneminder
+
+This will pull the zoneminder docker image.  Once it is installed you are ready to run the docker.
+
+To run Zoneminder:
 
 docker run -d --name="Zoneminder" \
 --net="bridge" \
@@ -40,8 +46,6 @@ Changes:
 2019-09-14
 - Update README to make it more generic.
 - Add INSTALL_YOLO and INSTALL_TINY_YOLO environment variables to download the model files for zmeventserver when hook processing is enabled.
-
-2019-09-07
 - Update zmNinja Event Notification Server to version 4.2.
 
 2019-09-05

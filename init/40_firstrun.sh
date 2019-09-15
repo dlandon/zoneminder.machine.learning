@@ -267,6 +267,32 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		fi
 	fi
 
+	# Handle the objectconfig.ini file
+	if [ -f /root/objectconfig.ini ]; then
+		echo "Moving objectconfig.ini"
+		cp /root/objectconfig.ini /config/hook/objectconfig.ini.default
+		if [ ! -f /config/hook/objectconfig.ini ]; then
+			mv /root/objectconfig.ini /config/hook/objectconfig.ini
+		else
+			rm -rf /root/objectconfig.ini
+		fi
+	else
+		echo "File objectconfig.ini already moved"
+	fi
+
+	# Handle the detect_wrapper.sh file
+	if [ -f /root/detect_wrapper.sh ]; then
+		echo "Moving detect_wrapper.sh"
+		cp /root/detect_wrapper.sh /config/hook/detect_wrapper.sh.default
+		if [ ! -f /config/hook/detect_wrapper.sh ]; then
+			mv /root/detect_wrapper.sh /config/hook/detect_wrapper.sh
+		else
+			rm -rf /root/detect_wrapper.sh
+		fi
+	else
+		echo "File detect_wrapper.sh already moved"
+	fi
+
 	# Symbolic link for models in /config
 	rm -rf /var/lib/zmeventnotification/models
 	ln -sf /config/hook/models /var/lib/zmeventnotification/models
