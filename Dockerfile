@@ -82,7 +82,7 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	echo "#!/bin/sh\n\n/usr/bin/zmaudit.pl -f" >> /etc/cron.weekly/zmaudit && \
 	chmod +x /etc/cron.weekly/zmaudit
 
-RUN	apt-get -y remove wget make && \
+RUN	apt-get -y remove make && \
 	apt-get -y clean && \
 	apt-get -y autoremove && \
 	rm -rf /tmp/* /var/tmp/*

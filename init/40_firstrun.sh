@@ -73,13 +73,6 @@ if [ ! -d /config/hook ]; then
 	mkdir /config/hook
 fi
 
-# Create models folder if it doesn't exist
-if [ ! -d /config/hook/models ]; then
-	echo "Creating hook/models folder in config folder"
-	mkdir -p /config/hook/models/yolov3
-	mkdir -p /config/hook/models/tinyyolo
-fi
-
 # Create known_faces folder if it doesn't exist
 if [ ! -d /config/hook/known_faces ]; then
 	echo "Creating hook/known_faces folder in config folder"
@@ -134,9 +127,11 @@ chown -R $PUID:$PGID /config/zmeventnotification.*
 chmod -R 666 /config/zmeventnotification.*
 chown -R $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
-chown -R www-data:www-data /config/push
-chmod 755 /config/push
-chmod 644 /config/push/*
+if [ -d /config/push ]; then
+	chown -R www-data:www-data /config/push
+	chmod 755 /config/push
+	chmod 644 /config/push/*
+fi
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
@@ -251,20 +246,42 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		pip3 install numpy opencv-python imutils configparser Shapely future pyzmutils requests
 	fi
 
-	# Copy models folder(s) into the docker image
+	# Download models files
+	if [ "$INSTALL_TINY_YOLO" == "1" ]; then
+		if [ ! -d /config/hook/models/tinyyolo ]; then
+			echo "Downlading tiny yolo files"
+			mkdir -p /config/hook/models/tinyyolo
+			wget https://pjreddie.com/media/files/yolov3-tiny.weights -O /config/hook/models/tinyyolo/yolov3-tiny.weights
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3-tiny.cfg -O /config/hook/models/tinyyolo/yolov3-tiny.cfg
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolo/yolov3-tiny.txt
+		fi
+	fi
+
+	if [ "$INSTALL_YOLO" == "1" ]; then
+		if [ ! -d /config/hook/models/yolov3 ]; then
+			echo "Downloading yolo files"
+			mkdir -p /config/hook/models/yolov3
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg -O /config/hook/models/yolov3/yolov3.cfg
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov3/yolov3_classes.txt
+			wget https://pjreddie.com/media/files/yolov3.weights -O /config/hook/models/yolov3/yolov3.weights
+		fi
+	fi
+
+	# Symbolic link for models in /config
 	rm -rf /var/lib/zmeventnotification/models
-	cp -r /config/hook/models /var/lib/zmeventnotification/models
+	ln -sf /config/hook/models /var/lib/zmeventnotification/models
 	chown -R www-data:www-data /var/lib/zmeventnotification/models
 
-	# Copy known_faces folder into the docker image
+	# Symbolic link for known_faces in /config
 	rm -rf /var/lib/zmeventnotification/known_faces
-	cp -r /config/hook/known_faces /var/lib/zmeventnotification/known_faces
+	ln -sf /config/hook/known_faces /var/lib/zmeventnotification/known_faces
 	chown -R www-data:www-data /var/lib/zmeventnotification/known_faces
 
-	# Copy hook files
-	cp -p /config/hook/detect* /usr/bin/ 2>/dev/null
+	# Symbolic link for hook files in /config
+	ln -sf /config/hook/detect.py /usr/bin/detect.py 2>/dev/null
+	ln -sf /config/hook/detect_wrapper.sh /usr/bin/detect_wrapper.sh 2>/dev/null
 	chmod +x /usr/bin/detect* 2>/dev/null
-	cp -p /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
+	ln -sf /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
 
 	if [ "$INSTALL_FACE" == "1" ] && [ -f /usr/bin/setup.py ]; then
 		# Install for face recognition

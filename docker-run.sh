@@ -11,6 +11,8 @@ docker run -d --name="Zoneminder" \
 -e PGID="100" \
 -e INSTALL_HOOK="0" \
 -e INSTALL_FACE="0" \
+-e INSTALL_TINY_YOLO="0" \
+-e INSTALL_YOLO="0" \
 -v "/mnt/cache/appdata/Zoneminder":"/config":rw \
 -v "/mnt/cache/appdata/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder

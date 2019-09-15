@@ -17,13 +17,19 @@ docker run -d --name="Zoneminder" \
 -e PGID="100" \
 -e INSTALL_HOOK="0" \
 -e INSTALL_FACE="0" \
+-e INSTALL_TINY_YOLO="0" \
+-e INSTALL_YOLO="0" \
 -v "/mnt/Zoneminder":"/config":rw \
 -v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder
 
-Set INSTALL_HOOK="1" to install the hook processing packages and run setup.py to prepare the hook processing.
+Set INSTALL_HOOK="1" to install the hook processing packages and run setup.py to prepare the hook processing.  The initial installation can take a long time.
 
 Set INSTALL_FACE="1" to install face recognition packages.  The initial installation can take a long time.
+
+Set INSTALL_TINY_YOLO="1" to install the tiny yolo hook processing files.
+
+Set INSTALL_YOLO="1" to install the yolo hook processing files.
 
 To access the Zoneminder gui: https://IP:8443/zm
 
@@ -33,6 +39,10 @@ Changes:
 
 2019-09-14
 - Update README to make it more generic.
+- Add INSTALL_YOLO and INSTALL_TINY_YOLO environment variables to download the model files for zmeventserver when hook processing is enabled.
+
+2019-09-07
+- Update zmNinja Event Notification Server to version 4.2.
 
 2019-09-05
 - Fix update script.
