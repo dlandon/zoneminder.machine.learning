@@ -1,17 +1,27 @@
-# Zoneminder 1.32 Docker
+## Zoneminder Docker
+(Current version: 1.32)
+
+### About
+This is an easy to run dockerized image of [ZoneMinder](https://github.com/ZoneMinder/zoneminder) along with the the [ZM Event Server](https://github.com/pliablepixels/zmeventnotification) and its machine learning subsystem (which is disabled by default but can be enabled by a simple configuration).  
 
 The configuration settings that are needed for this implementation of Zoneminder are pre-applied and do not need to be changed on the first run of Zoneminder.
 
 This verson will now upgrade from previous versions.
 
+### Installation
 Install the docker by going to a command line and enter the command:
 
+```bash
 docker pull dlandon/zoneminder
+```
 
 This will pull the zoneminder docker image.  Once it is installed you are ready to run the docker.
 
+Before you run the image, feel free to read configuration section below to customize various settings
+
 To run Zoneminder:
 
+```bash
 docker run -d --name="Zoneminder" \
 --net="bridge" \
 --privileged="true" \
@@ -28,20 +38,29 @@ docker run -d --name="Zoneminder" \
 -v "/mnt/Zoneminder":"/config":rw \
 -v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder
+```
+**Note**: If you have opted to install face recognition, and/or have opted to download the yolo models, it takes time.
+Face recognition in particular can take several minutes (or more). Once the `docker run` command above completes, you may not be able to access ZoneMinder till all the downloads are done. To follow along the installation progress, do a `docker logs -f zoneminder` to see the syslog for the container that was created above.
 
-Set INSTALL_HOOK="1" to install the hook processing packages and run setup.py to prepare the hook processing.  The initial installation can take a long time.
+### Subsequent runs
 
-Set INSTALL_FACE="1" to install face recognition packages.  The initial installation can take a long time.
+You can start/stop/restart the container anytime. You don't need to run the command above every time. If you have already created the container once (by the `docker run` command above), you can simply do a `docker stop zoneminder` to stop it and a `docker start zoneminder` to start it anytime (or do a `docker restart zoneminder`)
 
-Set INSTALL_TINY_YOLO="1" to install the tiny yolo hook processing files.
+#### Customization
 
-Set INSTALL_YOLO="1" to install the yolo hook processing files.
+- Set `INSTALL_HOOK="1"` to install the hook processing packages and run setup.py to prepare the hook processing.  The initial installation can take a long time.
+- Set `INSTALL_FACE="1"` to install face recognition packages.  The initial installation can take a long time.
+- Set `INSTALL_TINY_YOLO="1"` to install the tiny yolo hook processing files.
+- Set `INSTALL_YOLO="1"` to install the yolo hook processing files.
+- The command above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data is kept here. You can change this to any directory in your host path that you want to.
 
-To access the Zoneminder gui: https://IP:8443/zm
+#### Usage
 
-The zmNinja Event Notification Server is accessed at port 9000.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
+To access the Zoneminder gui, browse to: `https://<your host ip>:8443/zm`
 
-Changes:
+The zmNinja Event Notification Server is accessed at port `9000`.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
+
+#### Change Log
 
 2019-09-14
 - Update README to make it more generic.
