@@ -54,6 +54,10 @@ You can start/stop/restart the container anytime. You don't need to run the comm
 - Set `INSTALL_YOLO="1"` to install the yolo hook processing files.
 - The command above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data is kept here. You can change this to any directory in your host path that you want to.
 
+#### Post install configuration
+
+After successful installation, please refer to the ZoneMinder, Event Server and Machine Learning configuration guides from the authors of these components to set it up to your needs. Specifically, if you are using the Event Server and the Machine learning hooks, you will need to customize `zmeventnotification.ini` and `objectconfig.ini`
+
 #### Usage
 
 To access the Zoneminder gui, browse to: `https://<your host ip>:8443/zm`
