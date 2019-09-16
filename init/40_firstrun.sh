@@ -19,9 +19,18 @@ else
 	echo "File zm.conf already moved"
 fi
 
-# Handle the zmeventnotification.ini file
+# Handle the zmeventnotification.ini & daemon files
+
+	if [ -f /root/zmeventnotification/zmeventnotification.pl ]; then
+		echo "Moving the event notification server"
+		mv /root/zmeventnotification/zmeventnotification.pl /usr/bin
+    chmod +x /usr/bin/zmeventnotification.pl 2>/dev/null
+	else
+		echo "Event notification server already moved"
+	fi
+
 if [ -f /root/zmeventnotification.ini ]; then
-	echo "Moving zmeventnotification.ini"
+	echo "Moving zmeventnotificatio]n.ini"
 	cp /root/zmeventnotification.ini /config/zmeventnotification.ini.default
 	if [ ! -f /config/zmeventnotification.ini ]; then
 		mv /root/zmeventnotification.ini /config/zmeventnotification.ini
@@ -224,6 +233,8 @@ chown www-data:www-data /etc/zm/zmeventnotification.ini
 echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/meminfo` bytes"
 umount /dev/shm
 mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=${SHMEM} tmpfs /dev/shm
+
+
 
 # Install hook packages, if enabled
 
