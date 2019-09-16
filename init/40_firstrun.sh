@@ -244,8 +244,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
     # pip3 will take care on installing dependent packages 
 		pip3 install /root/zmeventnotification
     rm -rf /root/zmeventnotification/zmes_hook_helpers
-	fi
-  else
+	 else
     echo "hook python modules are already installed"
   fi
 
@@ -257,7 +256,6 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			wget https://pjreddie.com/media/files/yolov3-tiny.weights -O /config/hook/models/tinyyolo/yolov3-tiny.weights
 			wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3-tiny.cfg -O /config/hook/models/tinyyolo/yolov3-tiny.cfg
 			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolo/yolov3-tiny.txt
-		fi
     else
       echo "Tiny yolo files have already been downloading, skipping..."
     fi
@@ -270,7 +268,6 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg -O /config/hook/models/yolov3/yolov3.cfg
 			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov3/yolov3_classes.txt
 			wget https://pjreddie.com/media/files/yolov3.weights -O /config/hook/models/yolov3/yolov3.weights
-		fi
     else
       echo "Yolo files have already been downloading, skipping..."
     fi
