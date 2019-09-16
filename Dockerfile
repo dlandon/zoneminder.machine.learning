@@ -13,7 +13,7 @@ ENV	SHMEM="50%" \
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
 
-COPY zmeventnotification /root/zmeventnotification/
+COPY zmeventnotification/ /root/zmeventnotification/
 #COPY zmeventnotification/zmeventnotification.pl /usr/bin/
 #COPY zmeventnotification/zmeventnotification.ini /root/
 #COPY zmeventnotification/objectconfig.ini /root/
