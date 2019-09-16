@@ -12,12 +12,15 @@ ENV	SHMEM="50%" \
 
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
-COPY zmeventnotification/zmeventnotification.pl /usr/bin/
-COPY zmeventnotification/zmeventnotification.ini /root/
-COPY zmeventnotification/objectconfig.ini /root/
-COPY zmeventnotification/detect_wrapper.sh /root/
-COPY zmeventnotification/detect.py /root/
-COPY zmeventnotification/zmes_hook_helpers/ /root/zmeventnotification/
+
+COPY zmeventnotification /root/zmeventnotification/
+#COPY zmeventnotification/zmeventnotification.pl /usr/bin/
+#COPY zmeventnotification/zmeventnotification.ini /root/
+#COPY zmeventnotification/objectconfig.ini /root/
+#COPY zmeventnotification/detect_wrapper.sh /root/
+#COPY zmeventnotification/detect.py /root/
+#COPY zmeventnotification/setup.py /root/
+#COPY zmeventnotification/zmes_hook_helpers/ /root/zmeventnotification/zmes_hook_helpers/
 
 
 RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
