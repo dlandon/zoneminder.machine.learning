@@ -253,6 +253,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		# Python modules needed for hook processing
 		apt-get -y install python3-pip cmake
     # pip3 will take care on installing dependent packages 
+    pip3 install future
 		pip3 install /root/zmeventnotification
     rm -rf /root/zmeventnotification/zmes_hook_helpers
 	 else
