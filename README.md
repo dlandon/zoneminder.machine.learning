@@ -37,14 +37,14 @@ docker run -d --name="Zoneminder" \
 -e INSTALL_YOLO="0" \
 -v "/mnt/Zoneminder":"/config":rw \
 -v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
-zoneminder
+dlandon/zoneminder
 ```
 **Note**: If you have opted to install face recognition, and/or have opted to download the yolo models, it takes time.
 Face recognition in particular can take several minutes (or more). Once the `docker run` command above completes, you may not be able to access ZoneMinder till all the downloads are done. To follow along the installation progress, do a `docker logs -f zoneminder` to see the syslog for the container that was created above.
 
 ### Subsequent runs
 
-You can start/stop/restart the container anytime. You don't need to run the command above every time. If you have already created the container once (by the `docker run` command above), you can simply do a `docker stop zoneminder` to stop it and a `docker start zoneminder` to start it anytime (or do a `docker restart zoneminder`)
+You can start/stop/restart the container anytime. You don't need to run the command above every time. If you have already created the container once (by the `docker run` command above), you can simply do a `docker stop Zoneminder` to stop it and a `docker start Zoneminder` to start it anytime (or do a `docker restart zoneminder`)
 
 #### Customization
 
@@ -54,9 +54,13 @@ You can start/stop/restart the container anytime. You don't need to run the comm
 - Set `INSTALL_YOLO="1"` to install the yolo hook processing files.
 - The command above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data/event files/etc are kept here. You can change this to any directory in your host path that you want to.
 
-#### Post install configuration
+#### Post install configuration and caveats
 
-After successful installation, please refer to the [ZoneMinder](https://zoneminder.readthedocs.io/en/stable/), [Event Server and Machine Learning](https://zmeventnotification.readthedocs.io/en/latest/index.html) configuration guides from the authors of these components to set it up to your needs. Specifically, if you are using the Event Server and the Machine learning hooks, you will need to customize `/etc/zm/zmeventnotification.ini` and `/etc/zm/objectconfig.ini`
+- After successful installation, please refer to the [ZoneMinder](https://zoneminder.readthedocs.io/en/stable/), [Event Server and Machine Learning](https://zmeventnotification.readthedocs.io/en/latest/index.html) configuration guides from the authors of these components to set it up to your needs. Specifically, if you are using the Event Server and the Machine learning hooks, you will need to customize `/etc/zm/zmeventnotification.ini` and `/etc/zm/objectconfig.ini`
+
+- Note that by default, this docker build runs ZM on port 443 inside the docker container and maps it to port 8443 for the outside world. Therefore, if you are configuring `/etc/zm/objectconfig.ini` or `/etc/zm/zmeventnotification.ini` remember to use `https://localhost:443/<etc>` as the base URL
+
+- Push notifications with images will not work unless you replace the self-signed certificates that are auto-generated. Feel free to use the excellent and free [LetsEncrypt](https://letsencrypt.org) service if you'd like.
 
 #### Usage
 
@@ -65,6 +69,9 @@ To access the Zoneminder gui, browse to: `https://<your host ip>:8443/zm`
 The zmNinja Event Notification Server is accessed at port `9000`.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 #### Change Log
+
+2019-09-17
+- Additional changes for zmevent server installation.
 
 2019-09-15
 - Update README to make it more generic.
