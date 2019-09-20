@@ -70,6 +70,9 @@ The zmNinja Event Notification Server is accessed at port `9000`.  Security with
 
 #### Change Log
 
+2019-09-19
+- Update zmes_hook_helpers.
+
 2019-09-17
 - Additional changes for zmevent server installation.
 
