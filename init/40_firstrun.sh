@@ -116,8 +116,6 @@ chown -R $PUID:$PGID /config/conf
 chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
 chmod -R 666 /config/control
-chown -R $PUID:$PGID /config/hook
-chmod -R 777 /config/hook
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 777 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.*
@@ -243,6 +241,8 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			echo "Creating hook folder in config folder"
 			mkdir /config/hook
 		fi
+		chown -R $PUID:$PGID /config/hook
+		chmod -R 777 /config/hook
 
 		# Python modules needed for hook processing
 		apt-get -y install python3-pip cmake
