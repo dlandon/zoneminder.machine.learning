@@ -1,5 +1,4 @@
 # Set up some defaults
-update zm.Config SET Value='/zm/cgi-bin/nph-zms' WHERE Name='ZM_PATH_ZMS';
 update zm.Config SET Value='/usr/bin/avconv' WHERE Name='ZM_PATH_FFMPEG';
 update zm.Config SET Value=1 WHERE Name='ZM_OPT_FFMPEG';
 update zm.Config SET Value=1 WHERE Name='ZM_OPT_CAMBOZOLA';
