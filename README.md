@@ -39,6 +39,9 @@ docker run -d --name="Zoneminder" \
 -v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
 dlandon/zoneminder
 ```
+
+For http:// access use: -p 8080:80/tcp
+
 **Note**: If you have opted to install face recognition, and/or have opted to download the yolo models, it takes time.
 Face recognition in particular can take several minutes (or more). Once the `docker run` command above completes, you may not be able to access ZoneMinder till all the downloads are done. To follow along the installation progress, do a `docker logs -f zoneminder` to see the syslog for the container that was created above.
 
