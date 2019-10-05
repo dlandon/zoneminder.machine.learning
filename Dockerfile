@@ -4,7 +4,7 @@ LABEL maintainer="dlandon"
 
 ENV	PHP_VERS="7.1"
 ENV	ZM_VERS="1.32"
-ENV	ZMEVENT_VERS="4.2"
+ENV	ZMEVENT_VERS="4.4"
 
 ENV	SHMEM="50%" \
 	PUID="99" \

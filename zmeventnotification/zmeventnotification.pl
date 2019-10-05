@@ -41,7 +41,8 @@ use Time::HiRes qw/gettimeofday/ ;
 use Symbol qw(qualify_to_ref) ;
 use IO::Select ;
 
-# debugging only
+
+# debugging only.
 #use Data::Dumper;
 
 # ==========================================================================
@@ -58,7 +59,7 @@ use IO::Select ;
 # ==========================================================================
 
 
-my $app_version="4.2-Docker";
+my $app_version="4.4-Docker";
 
 
 # ==========================================================================
@@ -151,6 +152,8 @@ my $hook_pass_image_path ;
 
 my $picture_url ;
 my $include_picture ;
+my $picture_portal_username;
+my $picture_portal_password;
 
 #default key. Please don't change this
 use constant NINJA_API_KEY =>
@@ -173,6 +176,8 @@ if ( !try_use( "Config::IniFiles" ) ) { Fatal( "Config::Inifiles missing" ) ; }
 if ( !try_use( "Getopt::Long" ) )     { Fatal( "Getopt::Long missing" ) ; }
 if ( !try_use( "File::Basename" ) )   { Fatal( "File::Basename missing" ) ; }
 if ( !try_use( "File::Spec" ) )       { Fatal( "File::Spec missing" ) ; }
+if ( !try_use( "URI::Escape" ) )       { Fatal( "URI::Escape missing" ) ; }
+
 
 #if (!try_use ("threads")) {Fatal ("threads library/support  missing");}
 
@@ -278,6 +283,9 @@ $picture_url //= config_get_val( $config, "customize", "picture_url" ) ;
 $include_picture //= config_get_val( $config, "customize", "include_picture",
     DEFAULT_CUSTOMIZE_INCLUDE_PICTURE ) ;
 
+$picture_portal_username //= config_get_val( $config, "customize", "picture_portal_username" ) ;
+$picture_portal_password //= config_get_val( $config, "customize", "picture_portal_password" ) ;
+
 $hook //= config_get_val( $config, "hook", "hook_script" ) ;
 $use_hook_description //=
     config_get_val( $config, "hook", "use_hook_description",
@@ -371,6 +379,8 @@ Store Frame in ZM...............${\(yes_or_no($hook_pass_image_path))}
 
 Picture URL ................... ${\(value_or_undefined($picture_url))}
 Include picture................ ${\(yes_or_no($include_picture))}
+Picture username .............. ${\(value_or_undefined($picture_portal_username))}
+Picture password .............. ${\(present_or_not($picture_portal_password))}
 
 EOF
         );
@@ -488,7 +498,7 @@ my $proxy_reach_time    = 0 ;
 my $wss ;
 my @events             = () ;
 my @active_connections = () ;
-my @needsReload        = 0 ;
+my @needsReload        = () ;
 
 # Main entry point
 
@@ -597,14 +607,19 @@ sub checkNewEvents() {
             zmMemInvalidate( $monitor ) ;
             }
         loadMonitors() ;
-        @needsReload = () ;
+        
         }
     elsif ( @needsReload ) {
-        foreach my $monitor ( @needsReload ) {
-            loadMonitor( $monitor ) ;
-            }
-        @needsReload = () ;
+        my @failedReloads = ();
+        while (@needsReload) {
+          my $monitor = shift @needsReload;
+          if (!loadMonitor($monitor)) {
+            printError ('Failed re-loading monitor:'.$monitor->{Id}.' adding back to reload list for next iteration');
+            push(@failedReloads, $monitor);
+          }
         }
+        @needsReload = @failedReloads;
+    }
 
     @events = () ;
 
@@ -612,6 +627,7 @@ sub checkNewEvents() {
         my $alarm_cause = "" ;
         if ( !zmMemVerify( $monitor ) ) {
 
+          #printDebug ('Monitor '.$monitor->{ Id }.' memverify FAILED');
 # Our attempt to verify the memory handle failed. We should reload the monitors.
 # Don't need to zmMemInvalidate because the monitor reload will do it.
             push @needsReload, $monitor ;
@@ -621,6 +637,9 @@ sub checkNewEvents() {
                     . ")" ) ;
             next ;
             }
+          else {
+            #printDebug ('Monitor '.$monitor->{ Id }.' memverify is ok');
+          }
 
         my ( $state, $last_event, $trigger_cause, $trigger_text ) = zmMemRead(
             $monitor,
@@ -764,18 +783,21 @@ sub checkNewEvents() {
 
 sub loadMonitor {
     my $monitor = shift ;
-    printInfo( "re-loading monitor " . $monitor->{ Name } ) ;
+    printInfo( "loadMonitor: re-loading monitor " . $monitor->{ Name } ) ;
     zmMemInvalidate( $monitor ) ;
     if ( zmMemVerify( $monitor ) ) {    # This will re-init shared memory
         $monitor->{ LastState } = zmGetMonitorState( $monitor ) ;
         $monitor->{ LastEvent } = zmGetLastEvent( $monitor ) ;
-        }
+        return 1;
     }
+    return 0; # coming here means verify failed
+  }
 
 # Refreshes list of monitors from DB
 #
 sub loadMonitors {
-    printInfo( "Loading monitors\n" ) ;
+    printInfo( "Re-loading monitors, emptying needsReload() list\n" ) ;
+    @needsReload = () ;
     $monitor_reload_time = time() ;
 
     my %new_monitors = () ;
@@ -793,8 +815,13 @@ sub loadMonitors {
         if ( zmMemVerify( $monitor ) ) {
             $monitor->{ LastState } = zmGetMonitorState( $monitor ) ;
             $monitor->{ LastEvent } = zmGetLastEvent( $monitor ) ;
+       	    $new_monitors{ $monitor->{ Id } } = $monitor ;
             }
-        $new_monitors{ $monitor->{ Id } } = $monitor ;
+	    else {
+          printError ("loadMonitors: zmMemVerify for monitor:".$monitor->{Id}." failed, setting up for reload in next iteration");
+          push @needsReload, $monitor;
+
+	    }
         }    # end while fetchrow
     %monitors = %new_monitors ;
     }
@@ -967,6 +994,8 @@ sub sendOverFCM {
     my $mname = $alarm->{ Name } ;
 
     my $pic = $picture_url =~ s/EVENTID/$eid/gr ;
+    $pic = $pic.'&username='.$picture_portal_username if ($picture_portal_username);
+    $pic = $pic.'&password='.uri_escape($picture_portal_password) if ($picture_portal_password);
 
     # if we used best match we will use the right image in notification
     if ( substr( $alarm->{ Cause }, 0, 3 ) eq "[a]" ) {
