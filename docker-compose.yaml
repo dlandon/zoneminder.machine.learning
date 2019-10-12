@@ -1,0 +1,28 @@
+version: '3.1'
+services:
+    zoneminder:
+        container_name: zoneminder
+        image: dlandon/zoneminder:latest
+        restart: unless-stopped
+        ports:
+            - 7878:443/tcp
+            - 7879:9000/tcp
+        network_mode: "bridge"
+        privileged: true
+        environment:
+            - TZ=Australia/Perth
+            - SHMEM=50%
+            - PUID=99
+            - PGID=100
+            - INSTALL_HOOK=0
+            - INSTALL_FACE=0
+            - INSTALL_TINY_YOLO=0
+            - INSTALL_YOLO=0
+        volumes:
+            - /mnt/IMATION/zoneminder/config:/config:rw 
+            - /mnt/IMATION/zoneminder/data:/var/cache/zoneminder:rw 
+networks:
+    public:
+        external: true
+    local:
+        external: true
