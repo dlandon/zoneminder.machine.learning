@@ -5,12 +5,12 @@ services:
         image: dlandon/zoneminder:latest
         restart: unless-stopped
         ports:
-            - 7878:443/tcp
-            - 7879:9000/tcp
+            - 8443:443/tcp
+            - 9000:9000/tcp
         network_mode: "bridge"
         privileged: true
         environment:
-            - TZ=Australia/Perth
+            - TZ=America/New_York
             - SHMEM=50%
             - PUID=99
             - PGID=100
@@ -19,10 +19,8 @@ services:
             - INSTALL_TINY_YOLO=0
             - INSTALL_YOLO=0
         volumes:
-            - /mnt/IMATION/zoneminder/config:/config:rw 
-            - /mnt/IMATION/zoneminder/data:/var/cache/zoneminder:rw 
-networks:
-    public:
-        external: true
-    local:
-        external: true
+            - config:/config:rw 
+            - data:/var/cache/zoneminder:rw 
+volumes:
+    config:
+    data:
