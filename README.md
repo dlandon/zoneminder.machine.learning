@@ -73,6 +73,9 @@ The zmNinja Event Notification Server is accessed at port `9000`.  Security with
 
 #### Change Log
 
+2019-10-26
+- Remove cambozola legacy browser support.
+
 2019-10-05
 - Update zmNinja Event Notification Server to version 4.4.
 

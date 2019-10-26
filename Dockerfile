@@ -41,12 +41,6 @@ RUN	rm /etc/mysql/my.cnf && \
 	perl -MCPAN -e "force install Net::MQTT::Simple::Auth"
 
 RUN	cd /root && \
-	wget www.andywilcock.com/code/cambozola/cambozola-latest.tar.gz && \
-	tar xvf cambozola-latest.tar.gz && \
-	cp cambozola*/dist/cambozola.jar /usr/share/zoneminder/www && \
-	rm -rf cambozola*/ && \
-	rm -rf cambozola-latest.tar.gz && \
-	chmod 775 /usr/share/zoneminder/www/cambozola.jar && \
 	chown -R www-data:www-data /usr/share/zoneminder/ && \
 	echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
 	sed -i "s|^;date.timezone =.*|date.timezone = ${TZ}|" /etc/php/$PHP_VERS/apache2/php.ini && \
