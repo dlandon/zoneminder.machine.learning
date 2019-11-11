@@ -32,6 +32,18 @@ else
 	echo "File zmeventnotification.ini already moved"
 fi
 
+# Handle the secrets.ini file
+if [ -f /root/zmeventnotification/secrets.ini ]; then
+	echo "Moving secrets.ini"
+	if [ ! -f /config/secrets.ini ]; then
+		mv /root/zmeventnotification/secrets.ini /config/secrets.ini
+	else
+		rm -rf /root/zmeventnotification/secrets.ini
+	fi
+else
+	echo "File secrets.ini already moved"
+fi
+
 # Handle the zmeventnotification.pl & daemon files
 if [ -f /root/zmeventnotification/zmeventnotification.pl ]; then
 	echo "Moving the event notification server"
@@ -120,6 +132,8 @@ chown -R $PUID:$PGID /config/ssmtp
 chmod -R 777 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.*
 chmod -R 666 /config/zmeventnotification.*
+chown -R $PUID:$PGID /config/secrets.ini
+chmod -R 666 /config/secrets.ini
 chown -R $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
 if [ -d /config/push ]; then
