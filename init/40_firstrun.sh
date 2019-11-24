@@ -305,20 +305,20 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		echo "File objectconfig.ini already moved"
 	fi
 
-	# Handle the detect_wrapper.sh file
-	if [ -f /root/zmeventnotification/detect_wrapper.sh ]; then
-		echo "Moving detect_wrapper.sh"
-		mv /root/zmeventnotification/detect_wrapper.sh /config/hook/detect_wrapper.sh
+	# Handle the zm_detect_wrapper.sh file
+	if [ -f /root/zmeventnotification/zm_detect_wrapper.sh ]; then
+		echo "Moving zm_detect_wrapper.sh"
+		mv /root/zmeventnotification/zm_detect_wrapper.sh /config/hook/zm_detect_wrapper.sh
 	else
-		echo "File detect_wrapper.sh already moved"
+		echo "File zm_detect_wrapper.sh already moved"
 	fi
 
-	# Handle the detect.py file
-	if [ -f /root/zmeventnotification/detect.py ]; then
-		echo "Moving detect.py"
-		mv /root/zmeventnotification/detect.py /config/hook/detect.py
+	# Handle the zm_detect.py file
+	if [ -f /root/zmeventnotification/zm_detect.py ]; then
+		echo "Moving zm_detect.py"
+		mv /root/zmeventnotification/zm_detect.py /config/hook/zm_detect.py
 	else
-		echo "File detect.py already moved"
+		echo "File zm_detect.py already moved"
 	fi
 
 	# Symbolic link for models in /config
