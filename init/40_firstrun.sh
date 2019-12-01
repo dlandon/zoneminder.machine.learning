@@ -309,6 +309,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	if [ -f /root/zmeventnotification/zm_detect_wrapper.sh ]; then
 		echo "Moving zm_detect_wrapper.sh"
 		mv /root/zmeventnotification/zm_detect_wrapper.sh /config/hook/zm_detect_wrapper.sh
+		rm -f /config/hook/detect_wrapper.sh
 	else
 		echo "File zm_detect_wrapper.sh already moved"
 	fi
@@ -317,6 +318,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	if [ -f /root/zmeventnotification/zm_detect.py ]; then
 		echo "Moving zm_detect.py"
 		mv /root/zmeventnotification/zm_detect.py /config/hook/zm_detect.py
+		rm -f /config/hook/detect.py
 	else
 		echo "File zm_detect.py already moved"
 	fi
@@ -332,9 +334,9 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	chown -R www-data:www-data /var/lib/zmeventnotification/known_faces
 
 	# Symbolic link for hook files in /config
-	ln -sf /config/hook/detect.py /usr/bin/detect.py 2>/dev/null
-	ln -sf /config/hook/detect_wrapper.sh /usr/bin/detect_wrapper.sh 2>/dev/null
-	chmod +x /usr/bin/detect* 2>/dev/null
+	ln -sf /config/hook/zm_detect.py /usr/bin/zm_detect.py 2>/dev/null
+	ln -sf /config/hook/zm_detect_wrapper.sh /usr/bin/zm_detect_wrapper.sh 2>/dev/null
+	chmod +x /usr/bin/zm_detect* 2>/dev/null
 	ln -sf /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
 
 	if [ "$INSTALL_FACE" == "1" ] && [ -f /root/zmeventnotification/setup.py ]; then
