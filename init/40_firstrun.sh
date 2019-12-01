@@ -338,7 +338,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	ln -sf /config/hook/zm_detect_wrapper.sh /usr/bin/zm_detect_wrapper.sh 2>/dev/null
 	chmod +x /usr/bin/zm_detect* 2>/dev/null
 	ln -sf /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
-	ln -sf /config/hook/secrets.ini /etc/zm/ 2>/dev/null
+	ln -sf /config/secrets.ini /etc/zm/ 2>/dev/null
 
 	if [ "$INSTALL_FACE" == "1" ] && [ -f /root/zmeventnotification/setup.py ]; then
 		# Create known_faces folder if it doesn't exist
