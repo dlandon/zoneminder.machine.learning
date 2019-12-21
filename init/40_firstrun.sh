@@ -102,6 +102,8 @@ rm -rf /etc/apache2/ssl/zoneminder.crt
 ln -sf /config/keys/cert.crt /etc/apache2/ssl/zoneminder.crt
 rm -rf /etc/apache2/ssl/zoneminder.key
 ln -sf /config/keys/cert.key /etc/apache2/ssl/zoneminder.key
+mkdir -p /var/lib/zmeventnotification/push
+ln -sf /config/push/tokens.txt /var/lib/zmeventnotification/push/tokens.txt
 
 # ssmtp
 rm -r /etc/ssmtp 
@@ -240,6 +242,9 @@ fi
 ln -sf /config/zmeventnotification.ini /etc/zm/zmeventnotification.ini
 chown www-data:www-data /etc/zm/zmeventnotification.ini
 
+# Symbolink for /config/secrets.ini
+ln -sf /config/secrets.ini /etc/zm/
+
 # Fix memory issue
 echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/meminfo` bytes"
 umount /dev/shm
@@ -309,7 +314,6 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	if [ -f /root/zmeventnotification/zm_detect_wrapper.sh ]; then
 		echo "Moving zm_detect_wrapper.sh"
 		mv /root/zmeventnotification/zm_detect_wrapper.sh /config/hook/zm_detect_wrapper.sh
-		rm -f /config/hook/detect_wrapper.sh
 	else
 		echo "File zm_detect_wrapper.sh already moved"
 	fi
@@ -318,7 +322,6 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	if [ -f /root/zmeventnotification/zm_detect.py ]; then
 		echo "Moving zm_detect.py"
 		mv /root/zmeventnotification/zm_detect.py /config/hook/zm_detect.py
-		rm -f /config/hook/detect.py
 	else
 		echo "File zm_detect.py already moved"
 	fi
@@ -338,7 +341,6 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	ln -sf /config/hook/zm_detect_wrapper.sh /usr/bin/zm_detect_wrapper.sh 2>/dev/null
 	chmod +x /usr/bin/zm_detect* 2>/dev/null
 	ln -sf /config/hook/objectconfig.ini /etc/zm/ 2>/dev/null
-	ln -sf /config/secrets.ini /etc/zm/ 2>/dev/null
 
 	if [ "$INSTALL_FACE" == "1" ] && [ -f /root/zmeventnotification/setup.py ]; then
 		# Create known_faces folder if it doesn't exist
