@@ -102,9 +102,8 @@ rm -rf /etc/apache2/ssl/zoneminder.crt
 ln -sf /config/keys/cert.crt /etc/apache2/ssl/zoneminder.crt
 rm -rf /etc/apache2/ssl/zoneminder.key
 ln -sf /config/keys/cert.key /etc/apache2/ssl/zoneminder.key
+
 mkdir -p /var/lib/zmeventnotification/push
-chown -R www-data:www-data /var/lib/zmeventnotification/push
-chmod 755 /var/lib/zmeventnotification/push
 mkdir -p /config/push
 rm -rf /var/lib/zmeventnotification/push/tokens.txt
 ln -sf /config/push/tokens.txt /var/lib/zmeventnotification/push/tokens.txt
@@ -142,11 +141,8 @@ chown -R $PUID:$PGID /config/secrets.ini
 chmod -R 666 /config/secrets.ini
 chown -R $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
-if [ -d /config/push ]; then
-	chown -R www-data:www-data /config/push
-	chmod 755 /config/push
-	chmod 644 /config/push/*
-fi
+chown -R www-data:www-data /config/push
+chown -R www-data:www-data /var/lib/zmeventnotification/push
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
