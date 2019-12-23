@@ -103,6 +103,8 @@ ln -sf /config/keys/cert.crt /etc/apache2/ssl/zoneminder.crt
 rm -rf /etc/apache2/ssl/zoneminder.key
 ln -sf /config/keys/cert.key /etc/apache2/ssl/zoneminder.key
 mkdir -p /var/lib/zmeventnotification/push
+chown -R www-data:www-data /var/lib/zmeventnotification/push
+chmod 755 /var/lib/zmeventnotification/push
 mkdir -p /config/push
 rm -rf /var/lib/zmeventnotification/push/tokens.txt
 ln -sf /config/push/tokens.txt /var/lib/zmeventnotification/push/tokens.txt
