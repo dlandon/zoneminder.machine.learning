@@ -1,12 +1,21 @@
-FROM dlandon/baseimage
+FROM phusion/baseimage:0.11
 
 LABEL maintainer="dlandon"
 
-ENV	PHP_VERS="7.1"
-ENV	ZM_VERS="1.32"
-ENV	ZMEVENT_VERS="5.4"
+ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
+	DEBIAN_FRONTEND="noninteractive" \
+	DISABLE_SSH="true" \
+	HOME="/root" \
+	LC_ALL="C.UTF-8" \
+	LANG="en_US.UTF-8" \
+	LANGUAGE="en_US.UTF-8" \
+	TZ="Etc/UTC" \
+	TERM="xterm"
 
-ENV	SHMEM="50%" \
+ENV	PHP_VERS="7.4" \
+	ZM_VERS="1.34" \
+	ZMEVENT_VERS="5.4" \
+	SHMEM="50%" \
 	PUID="99" \
 	PGID="100"
 
@@ -20,9 +29,9 @@ RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \
 	apt-get -y dist-upgrade -o Dpkg::Options::="--force-confold" && \
 	apt-get -y install apache2 mariadb-server && \
-	apt-get -y install ssmtp mailutils net-tools libav-tools wget sudo make && \
+	apt-get -y install ssmtp mailutils net-tools wget sudo make && \
 	apt-get -y install php$PHP_VERS php$PHP_VERS-fpm libapache2-mod-php$PHP_VERS php$PHP_VERS-mysql php$PHP_VERS-gd && \
-	apt-get -y install libcrypt-mysql-perl libyaml-perl libjson-perl && \
+	apt-get -y install libcrypt-mysql-perl libyaml-perl libjson-perl libavutil-dev && \
 	apt-get -y install --no-install-recommends libvlc-dev libvlccore-dev vlc
 
 RUN	apt-get -y install zoneminder
@@ -73,10 +82,13 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 RUN	apt-get -y remove make && \
 	apt-get -y clean && \
 	apt-get -y autoremove && \
-	rm -rf /tmp/* /var/tmp/*
+	rm -rf /tmp/* /var/tmp/* && \
+	chmod +x /etc/my_init.d/*.sh
 
 VOLUME \
 	["/config"] \
 	["/var/cache/zoneminder"]
 
 EXPOSE 80 443 9000
+
+CMD ["/sbin/my_init"]

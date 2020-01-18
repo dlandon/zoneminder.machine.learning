@@ -1,5 +1,5 @@
 ## Zoneminder Docker
-(Current version: 1.32)
+(Current version: 1.34)
 
 ### About
 This is an easy to run dockerized image of [ZoneMinder](https://github.com/ZoneMinder/zoneminder) along with the the [ZM Event Notification Server](https://github.com/pliablepixels/zmeventnotification) and its machine learning subsystem (which is disabled by default but can be enabled by a simple configuration).  
@@ -72,6 +72,8 @@ To access the Zoneminder gui, browse to: `https://<your host ip>:8443/zm`
 The zmNinja Event Notification Server is accessed at port `9000`.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 #### Change Log
+2020-01017
+- Update Zoneminder to 1.34.
 
 2020-01-10
 - Update zmNinja Event Notification Server to version 5.4.
