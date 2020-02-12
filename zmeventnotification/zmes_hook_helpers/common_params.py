@@ -137,6 +137,12 @@ config_vals = {
             'default': None,
             'type': 'string'
         },
+
+        'ml_fallback_local': {
+            'section': 'ml',
+            'default': 'no',
+            'type': 'string'
+        },
        
         'ml_user': {
             'section': 'ml',
@@ -253,10 +259,26 @@ config_vals = {
             'default': '/var/lib/zmeventnotification/known_faces',
             'type': 'string',
         },
+        'unknown_images_path':{
+            'section': 'face',
+            'default': '/var/lib/zmeventnotification/unknown_faces',
+            'type': 'string',
+        },
         'unknown_face_name':{
             'section': 'face',
             'default': 'unknown face',
             'type': 'string',
+        },
+        'save_unknown_faces':{
+            'section': 'face',
+            'default': 'yes',
+            'type': 'string',
+        },
+
+        'save_unknown_faces_leeway_pixels':{
+            'section': 'face',
+            'default': '50',
+            'type': 'int',
         },
 
         # generic ALPR
