@@ -8,7 +8,7 @@ The configuration settings that are needed for this implementation of Zoneminder
 
 This verson will now upgrade from previous versions.
 
-Click to [Donate](https://www.paypal.com/us/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=EJGPC7B5CS66E).
+You can donate [here](https://www.paypal.com/us/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=EJGPC7B5CS66E).
 
 ### Installation
 Install the docker by going to a command line and enter the command:
