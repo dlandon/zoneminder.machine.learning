@@ -45,11 +45,11 @@ dlandon/zoneminder
 For http:// access use: -p 8080:80/tcp
 
 **Note**: If you have opted to install face recognition, and/or have opted to download the yolo models, it takes time.
-Face recognition in particular can take several minutes (or more). Once the `docker run` command above completes, you may not be able to access ZoneMinder till all the downloads are done. To follow along the installation progress, do a `docker logs -f zoneminder` to see the syslog for the container that was created above.
+Face recognition in particular can take several minutes (or more). Once the `docker run` command above completes, you may not be able to access ZoneMinder till all the downloads are done. To follow along the installation progress, do a `docker logs -f Zoneminder` to see the syslog for the container that was created above.
 
 ### Subsequent runs
 
-You can start/stop/restart the container anytime. You don't need to run the command above every time. If you have already created the container once (by the `docker run` command above), you can simply do a `docker stop Zoneminder` to stop it and a `docker start Zoneminder` to start it anytime (or do a `docker restart zoneminder`)
+You can start/stop/restart the container anytime. You don't need to run the command above every time. If you have already created the container once (by the `docker run` command above), you can simply do a `docker stop Zoneminder` to stop it and a `docker start Zoneminder` to start it anytime (or do a `docker restart Zoneminder`)
 
 #### Customization
 
