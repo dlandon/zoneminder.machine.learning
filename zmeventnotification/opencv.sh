@@ -9,7 +9,7 @@ logger "Compiling opencv with GPU Support" -tEventServer
 # install cuda toolkit
 logger "Installing cuda toolkit..." -tEventServer
 cd ~
-wget https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
+wget -q https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
 dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
 apt-key add /var/cuda-repo-10-1-local-10.1.168-418.67/7fa2af80.pub
 apt-get update
@@ -35,8 +35,8 @@ logger "Cuda support packages installed" -tEventServer
 # get opencv source
 logger "Downloading opencv source..." -tEventServer
 cd ~
-wget -O opencv.zip https://github.com/opencv/opencv/archive/4.2.0.zip
-wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.2.0.zip
+wget -q -O opencv.zip https://github.com/opencv/opencv/archive/4.2.0.zip
+wget -q -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.2.0.zip
 unzip opencv.zip
 unzip opencv_contrib.zip
 mv opencv-4.2.0 opencv

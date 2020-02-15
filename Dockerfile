@@ -14,7 +14,7 @@ ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
 
 ENV	PHP_VERS="7.4" \
 	ZM_VERS="1.34" \
-	ZMEVENT_VERS="5.4" \
+	ZMEVENT_VERS="5.7.4" \
 	SHMEM="50%" \
 	PUID="99" \
 	PGID="100"
@@ -77,7 +77,8 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf && \
 	echo "#!/bin/sh\n\n/usr/bin/zmaudit.pl -f" >> /etc/cron.weekly/zmaudit && \
-	chmod +x /etc/cron.weekly/zmaudit
+	chmod +x /etc/cron.weekly/zmaudit && \
+	chmod +x /root/zmeventnotification/opencv.sh
 
 RUN	apt-get -y remove make && \
 	apt-get -y clean && \

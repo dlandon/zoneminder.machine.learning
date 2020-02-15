@@ -269,8 +269,11 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		# pip3 will take care on installing dependent packages
 		pip3 install future
 		pip3 install /root/zmeventnotification
-		pip3 install opencv-python
-		pip3 install opencv-contrib-python
+		if [ "$GPU_SUPPORT" == "1" ]; then
+			/root/zmeventnotification/opencv.sh > /config/opencv.log &
+		else
+			pip3 install opencv-contrib-python
+		fi
 	    rm -rf /root/zmeventnotification/zmes_hook_helpers
 	fi
 
