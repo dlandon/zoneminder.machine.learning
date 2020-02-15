@@ -57,7 +57,14 @@ You can start/stop/restart the container anytime. You don't need to run the comm
 - Set `INSTALL_FACE="1"` to install face recognition packages.  The initial installation can take a long time.
 - Set `INSTALL_TINY_YOLO="1"` to install the tiny yolo hook processing files.
 - Set `INSTALL_YOLO="1"` to install the yolo hook processing files.
+- Set `GPU_SUPPORT="1"` to compile the opencv with GPU support.  This will take a LONG time (over an hour) and you'll need at least 15GB free memory.
 - The command above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data/event files/etc are kept here. You can change this to any directory in your host path that you want to.
+
+#### Adding Nvidia GPU support to the Zoneminder.
+
+You will have to install support your graphics card.  If you are using Unraid, install the Nvidia plugin and follow these [instructions](https://forums.unraid.net/topic/77813-plugin-linuxserverio-unraid-nvidia/?tab=comments#comment-719665) or install the Nvidia Docker, see [here](https://medium.com/@adityathiruvengadam/cuda-docker-%EF%B8%8F-for-deep-learning-cab7c2be67f9).
+
+After you confirm the graphics card is seen by the Zoneminder docker, you can then compile openvc with GPU support.  Be sure your Zoneminder docker can see the graphics card.  Set 'INSTALL_HOOK=1' and 'GPU_SUPPORT=1' and restart the docker.
 
 #### Post install configuration and caveats
 
@@ -75,7 +82,7 @@ The zmNinja Event Notification Server is accessed at port `9000`.  Security with
 
 #### Change Log
 2020-02-11
-- Update zmNinja Event Notification Server to version 5.7.
+- Update zmNinja Event Notification Server to version 5.7.4 and add opencv.sh compile script.
 
 2020-02-05
 - Adjust /var/cache/zoneminder ownership to www-data:www-data.
