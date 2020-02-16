@@ -45,6 +45,15 @@ else
 	echo "File secrets.ini already moved"
 fi
 
+# Handle the opencv.sh file
+if [ -f /root/zmeventnotification/opencv.sh ]; then
+	echo "Moving opencv.sh"
+	mv /root/zmeventnotification/opencv.sh /config/opencv.sh
+	chmod +x /config/opencv.sh
+else
+	echo "File opencv.sh already moved"
+fi
+
 # Handle the zmeventnotification.pl & daemon files
 if [ -f /root/zmeventnotification/zmeventnotification.pl ]; then
 	echo "Moving the event notification server"
@@ -269,11 +278,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		# pip3 will take care on installing dependent packages
 		pip3 install future
 		pip3 install /root/zmeventnotification
-		if [ "$GPU_SUPPORT" == "1" ]; then
-			/root/zmeventnotification/opencv.sh > /config/opencv.log &
-		else
-			pip3 install opencv-contrib-python
-		fi
+		pip3 install opencv-contrib-python
 	    rm -rf /root/zmeventnotification/zmes_hook_helpers
 	fi
 

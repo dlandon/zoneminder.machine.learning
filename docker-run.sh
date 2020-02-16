@@ -13,7 +13,6 @@ docker run -d --name="Zoneminder" \
 -e INSTALL_FACE="0" \
 -e INSTALL_TINY_YOLO="0" \
 -e INSTALL_YOLO="0" \
--e GPU_SUPPORT="0" \
 -v "/mnt/cache/appdata/Zoneminder":"/config":rw \
 -v "/mnt/cache/appdata/Zoneminder/data":"/var/cache/zoneminder":rw \
 zoneminder

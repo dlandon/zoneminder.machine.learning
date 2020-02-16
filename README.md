@@ -37,7 +37,6 @@ docker run -d --name="Zoneminder" \
 -e INSTALL_FACE="0" \
 -e INSTALL_TINY_YOLO="0" \
 -e INSTALL_YOLO="0" \
--e GPU_SUPPORT="0" \
 -v "/mnt/Zoneminder":"/config":rw \
 -v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
 dlandon/zoneminder
@@ -58,14 +57,19 @@ You can start/stop/restart the container anytime. You don't need to run the comm
 - Set `INSTALL_FACE="1"` to install face recognition packages.  The initial installation can take a long time.
 - Set `INSTALL_TINY_YOLO="1"` to install the tiny yolo hook processing files.
 - Set `INSTALL_YOLO="1"` to install the yolo hook processing files.
-- Set `GPU_SUPPORT="1"` to compile opencv with GPU support.  This will take a LONG time (over an hour) and you'll need at least 15GB free memory.
 - The command above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data/event files/etc are kept here. You can change this to any directory in your host path that you want to.
 
 #### Adding Nvidia GPU support to the Zoneminder.
 
-You will have to install support your graphics card.  If you are using Unraid, install the Nvidia plugin and follow these [instructions](https://forums.unraid.net/topic/77813-plugin-linuxserverio-unraid-nvidia/?tab=comments#comment-719665).  On other systems install the Nvidia Docker, see [here](https://medium.com/@adityathiruvengadam/cuda-docker-%EF%B8%8F-for-deep-learning-cab7c2be67f9).
+You will have to install support for your graphics card.  If you are using Unraid, install the Nvidia plugin and follow these [instructions](https://forums.unraid.net/topic/77813-plugin-linuxserverio-unraid-nvidia/?tab=comments#comment-719665).  On other systems install the Nvidia Docker, see [here](https://medium.com/@adityathiruvengadam/cuda-docker-%EF%B8%8F-for-deep-learning-cab7c2be67f9).
 
-After you confirm the graphics card is seen by the Zoneminder docker, you can then compile opencv with GPU support.  Be sure your Zoneminder docker can see the graphics card.  Set 'INSTALL_HOOK=1' and 'GPU_SUPPORT=1' and restart the docker.
+After you confirm the graphics card is seen by the Zoneminder docker, you can then compile opencv with GPU support.  Be sure your Zoneminder docker can see the graphics card.  Get into the docker command line and do this:
+- cd ~/zmeventnotification
+- ./opencv.sh
+
+This will compile the opencv with GPU support.  It takes a LONG time.  You should then have GPU support.
+
+You will have to install the CuDNN runtime yourself based on your particular setup.
 
 #### Post install configuration and caveats
 
@@ -82,7 +86,7 @@ To access the Zoneminder gui, browse to: `https://<your host ip>:8443/zm`
 The zmNinja Event Notification Server is accessed at port `9000`.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 #### Change Log
-2020-02-11
+2020-02-16
 - Update zmNinja Event Notification Server to version 5.7.4 and add opencv.sh compile script.
 
 2020-02-05

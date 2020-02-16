@@ -9,9 +9,8 @@ logger "Compiling opencv with GPU Support" -tEventServer
 # install cuda toolkit
 logger "Installing cuda toolkit..." -tEventServer
 cd ~
-wget https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
+wget -q https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
 dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
-sleep 1
 apt-key add /var/cuda-repo-10-1-local-10.1.168-418.67/7fa2af80.pub
 apt-get update
 apt-get -y upgrade -o Dpkg::Options::="--force-confold"

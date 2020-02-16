@@ -15,11 +15,10 @@ services:
             - SHMEM=50%
             - PUID=99
             - PGID=100
-            - INSTALL_HOOK=1
+            - INSTALL_HOOK=0
             - INSTALL_FACE=0
             - INSTALL_TINY_YOLO=0
             - INSTALL_YOLO=0
-            - GPU_SUPPORT=1
         volumes:
             - config:/config:rw 
             - data:/var/cache/zoneminder:rw 
