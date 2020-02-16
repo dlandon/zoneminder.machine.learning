@@ -9,8 +9,9 @@ logger "Compiling opencv with GPU Support" -tEventServer
 # install cuda toolkit
 logger "Installing cuda toolkit..." -tEventServer
 cd ~
-wget -q https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
+wget https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
 dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
+sleep 1
 apt-key add /var/cuda-repo-10-1-local-10.1.168-418.67/7fa2af80.pub
 apt-get update
 apt-get -y upgrade -o Dpkg::Options::="--force-confold"
@@ -52,7 +53,7 @@ logger "Compiling opencv..." -tEventServer
 
 cmake -D CMAKE_BUILD_TYPE=RELEASE \
 	-D CMAKE_INSTALL_PREFIX=/usr/local \
-	-D INSTALL_PYTHON_EXAMPLES=ON \
+	-D INSTALL_PYTHON_EXAMPLES=OFF \
 	-D INSTALL_C_EXAMPLES=OFF \
 	-D OPENCV_ENABLE_NONFREE=ON \
 	-D WITH_CUDA=ON \
@@ -63,8 +64,8 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE \
 	-D WITH_CUBLAS=1 \
 	-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
 	-D HAVE_opencv_python3=ON \
-	-D PYTHON_EXECUTABLE=~/.virtualenvs/opencv_cuda/bin/python \
-	-D BUILD_EXAMPLES=ON ..
+	-D PYTHON_EXECUTABLE=/usr/bin/python3 \
+	-D BUILD_EXAMPLES=OFF ..
 
 make -j$(nproc)
 make install
@@ -79,5 +80,8 @@ apt-get -y remove cuda-toolkit-10-1
 apt-get -y remove libjpeg-dev libpng-dev libtiff-dev libavcodec-dev libavformat-dev libswscale-dev
 apt-get -y remove libv4l-dev libxvidcore-dev libx264-dev libgtk-3-dev libatlas-base-dev gfortran
 apt-get -y autoremove
+
+# add opencv module
+pip3 install opencv-contrib-python
 
 logger "Opencv sucessfully compiled" -tEventServer
