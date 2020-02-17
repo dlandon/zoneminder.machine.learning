@@ -14,7 +14,7 @@
 # https://developer.nvidia.com/compute/machine-learning/cudnn/secure/v7.6.0.64/prod/10.1_20190516/Ubuntu18_04-x64/libcudnn7_7.6.0.64-1%2Bcuda10.1_amd64.deb
 # Place it in /config folder.  You wll need to have an account with Nvidia to download this package.
 #
-
+CUDNN_PACKAGE=libcudnn7_7.6.5.32-1+cuda10.1_amd64.deb
 #
 # Insure hook processing has been installed.
 #
@@ -40,14 +40,13 @@ dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
 apt-key add /var/cuda-repo-10-1-local-10.1.168-418.67/7fa2af80.pub
 apt-get update
 apt-get -y upgrade -o Dpkg::Options::="--force-confold"
-apt-get -y install cuda-toolkit-10-1
+apt-get -y install cuda
 rm -r cuda-repo*
 
 echo "export PATH=/usr/local/cuda/bin:$PATH" >/etc/profile.d/cuda.sh
 echo "export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/lib:$LD_LIBRARY_PATH" >> /etc/profile.d/cuda.sh
 echo "export CUDADIR=/usr/local/cuda" >> /etc/profile.d/cuda.sh
 echo "export CUDA_HOME=/usr/local/cuda" >> /etc/profile.d/cuda.sh
-mv /etc/ld.so.conf.d/cuda-10-1.conf  /etc/ld.so.conf.d/cuda-10-1.conf-orig
 echo "/usr/local/cuda/lib64" > /etc/ld.so.conf.d/cuda.conf
 ldconfig
 logger "Cuda toolkit installed" -tEventServer
@@ -56,7 +55,7 @@ logger "Cuda toolkit installed" -tEventServer
 # Install cuDNN package
 #
 logger "Installing cuDNN Package..." -tEventServer
-dpkg -i /config/libcudnn7_7.6.0.64-1+cuda10.1_amd64.deb
+dpkg -i /config/$CUDNN_PACKAGE
 logger "cuDNN Package installed" -tEventServer
 
 #

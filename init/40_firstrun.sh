@@ -166,10 +166,14 @@ chown -R $PUID:$PGID /config/secrets.ini
 chmod -R 666 /config/secrets.ini
 chown -R $PUID:$PGID /config/opencv.sh
 chmod -R 666 /config/opencv.sh
+chown -R $PUID:$PGID /config/opencv.sh.default
+chmod -R 666 /config/opencv.sh.default
 chown -R $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
 chown -R www-data:www-data /config/push/
 chown -R www-data:www-data /var/lib/zmeventnotification/
+chmod +x /config/opencv.sh
+chmod +x /config/opencv.sh.default
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then
