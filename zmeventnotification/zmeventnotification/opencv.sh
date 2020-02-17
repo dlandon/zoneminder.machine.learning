@@ -3,12 +3,39 @@
 #
 # Script to compile opencv with CUDA support.
 #
+# You need to prepare for compiling the opencv with CUDA support.
+#
+# You need to start with a clean docker image if you are going to recompile opencv.
+# Unraid: This can be done by switching to "Advanced View" and clicking "Force Update".
+# Other SYstems: Remove the docker image then reinstall it.
+# Hook processing has to be enabled to run this script.
+#
+# Download the cuDNN package for your configuration from here:
+# https://developer.nvidia.com/compute/machine-learning/cudnn/secure/v7.6.0.64/prod/10.1_20190516/Ubuntu18_04-x64/libcudnn7_7.6.0.64-1%2Bcuda10.1_amd64.deb
+# Place it in /config folder.  You wll need to have an account with Nvidia to download this package.
+#
+
+#
+# Insure hook processing has been installed.
+#
+if [ "$INSTALL_HOOK" != "1" ]; then
+	echo "Hook processing has to be installed before you can compile opencv!"
+	exit 1
+fi
+
 logger "Compiling opencv with GPU Support" -tEventServer
 
-# install cuda toolkit
+#
+# Remove hook installed opencv module
+#
+pip3 uninstall opencv-contrib-python
+
+#
+# Install cuda toolkit
+#
 logger "Installing cuda toolkit..." -tEventServer
 cd ~
-wget -q https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
+wget https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
 dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
 apt-key add /var/cuda-repo-10-1-local-10.1.168-418.67/7fa2af80.pub
 apt-get update
@@ -25,17 +52,27 @@ echo "/usr/local/cuda/lib64" > /etc/ld.so.conf.d/cuda.conf
 ldconfig
 logger "Cuda toolkit installed" -tEventServer
 
-# compile opencv with cuda support
+#
+# Install cuDNN package
+#
+logger "Installing cuDNN Package..." -tEventServer
+dpkg -i /config/libcudnn7_7.6.0.64-1+cuda10.1_amd64.deb
+logger "cuDNN Package installed" -tEventServer
+
+#
+# Compile opencv with cuda support
+#
 logger "Installing cuda support packages..." -tEventServer
 apt-get -y install libjpeg-dev libpng-dev libtiff-dev libavcodec-dev libavformat-dev libswscale-dev
 apt-get -y install libv4l-dev libxvidcore-dev libx264-dev libgtk-3-dev libatlas-base-dev gfortran
 logger "Cuda support packages installed" -tEventServer
 
-# get opencv source
+#
+# Get opencv source
+#
 logger "Downloading opencv source..." -tEventServer
-cd ~
-wget -q -O opencv.zip https://github.com/opencv/opencv/archive/4.2.0.zip
-wget -q -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.2.0.zip
+wget -O opencv.zip https://github.com/opencv/opencv/archive/4.2.0.zip
+wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.2.0.zip
 unzip opencv.zip
 unzip opencv_contrib.zip
 mv opencv-4.2.0 opencv
@@ -46,7 +83,9 @@ mkdir build
 cd build
 logger "Opencv source downloaded" -tEventServer
 
-# make opencv
+#
+# Make opencv
+#
 logger "Compiling opencv..." -tEventServer
 
 cmake -D CMAKE_BUILD_TYPE=RELEASE \
@@ -70,7 +109,9 @@ make install
 ldconfig
 logger "Opencv compiled" -tEventServer
 
-# clean up/remove unnecessary packages
+#
+# Clean up/remove unnecessary packages
+#
 logger "Cleaning up..." -tEventServer
 cd ~
 rm -r opencv*
@@ -79,7 +120,9 @@ apt-get -y remove libjpeg-dev libpng-dev libtiff-dev libavcodec-dev libavformat-
 apt-get -y remove libv4l-dev libxvidcore-dev libx264-dev libgtk-3-dev libatlas-base-dev gfortran
 apt-get -y autoremove
 
-# add opencv module
+#
+# Add opencv module wrapper
+#
 pip3 install opencv-contrib-python
 
 logger "Opencv sucessfully compiled" -tEventServer
