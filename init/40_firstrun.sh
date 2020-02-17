@@ -60,8 +60,12 @@ fi
 # Handle the opencv.sh file
 if [ -f /root/zmeventnotification/opencv.sh ]; then
 	echo "Moving opencv.sh"
-	mv /root/zmeventnotification/opencv.sh /config/opencv.sh
-	chmod +x /config/opencv.sh
+	cp /root/zmeventnotification/opencv.sh /config/opencv.sh.default
+	if [ ! -f /config/opencv.sh ]; then
+		mv /root/zmeventnotification/opencv.sh /config/opencv.sh
+	else
+		rm -rf /root/zmeventnotification/opencv.sh
+	fi
 else
 	echo "File opencv.sh already moved"
 fi
@@ -160,6 +164,8 @@ chown -R $PUID:$PGID /config/zmeventnotification.*
 chmod -R 666 /config/zmeventnotification.*
 chown -R $PUID:$PGID /config/secrets.ini
 chmod -R 666 /config/secrets.ini
+chown -R $PUID:$PGID /config/opencv.sh
+chmod -R 666 /config/opencv.sh
 chown -R $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
 chown -R www-data:www-data /config/push/
