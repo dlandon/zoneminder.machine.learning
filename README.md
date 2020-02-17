@@ -64,7 +64,7 @@ You can start/stop/restart the container anytime. You don't need to run the comm
 You will have to install support for your graphics card.  If you are using Unraid, install the Nvidia plugin and follow these [instructions](https://forums.unraid.net/topic/77813-plugin-linuxserverio-unraid-nvidia/?tab=comments#comment-719665).  On other systems install the Nvidia Docker, see [here](https://medium.com/@adityathiruvengadam/cuda-docker-%EF%B8%8F-for-deep-learning-cab7c2be67f9).
 
 After you confirm the graphics card is seen by the Zoneminder docker, you can then compile opencv with GPU support.  Be sure your Zoneminder docker can see the graphics card.  Get into the docker command line and do this:
-- cd ~/zmeventnotification
+- cd /config
 - ./opencv.sh
 
 This will compile the opencv with GPU support.  It takes a LONG time.  You should then have GPU support.
