@@ -3,7 +3,6 @@
 #
 # Script to compile opencv with CUDA support.
 #
-
 logger "Compiling opencv with GPU Support" -tEventServer
 
 # install cuda toolkit

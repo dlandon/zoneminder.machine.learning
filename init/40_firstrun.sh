@@ -19,6 +19,18 @@ else
 	echo "File zm.conf already moved"
 fi
 
+# Get the latest ES bundle
+cd /root
+rm -rf zmeventnotification
+wget -q https://github.com/dlandon/zoneminder/raw/master/zmeventnotification/EventServer.tgz
+if [ -f EventServer.tgz ]; then
+	tar -xf EventServer.tgz
+	rm EventServer.tgz
+else
+	echo "Error: Cannot download the ES server bundle"
+	exit 1
+fi
+
 # Handle the zmeventnotification.ini file
 if [ -f /root/zmeventnotification/zmeventnotification.ini ]; then
 	echo "Moving zmeventnotification.ini"
