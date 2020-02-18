@@ -301,8 +301,8 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		pip3 install future
 		pip3 install /root/zmeventnotification
 		pip3 install opencv-contrib-python
-	    rm -rf /root/zmeventnotification/zmes_hook_helpers
 	fi
+    rm -rf /root/zmeventnotification/zmes_hook_helpers
 
 	# Download models files
 	if [ "$INSTALL_TINY_YOLO" == "1" ]; then
