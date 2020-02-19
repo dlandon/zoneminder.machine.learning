@@ -243,6 +243,7 @@ logger "Cleaning up..." -tEventServer
 cd ~
 rm -r opencv*
 apt-get -y remove cuda gfortran
+update-rc.d -f nvidia-utils-440 remove
 apt-get -y autoremove
 
 logger "Opencv compile completed." -tEventServer
