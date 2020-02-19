@@ -51,11 +51,23 @@ OPENCV_URL=https://github.com/opencv/opencv/archive/4.2.0.zip
 # Be sure we have enough disk space to compile opencv.
 #
 SPACE_AVAIL=`/bin/df / | /usr/bin/awk '{print $4}' | grep -v 'Available'`
-if [[ $((SPACE_AVAIL/1024)) < 15360 ]];then
+if [[ $((SPACE_AVAIL/1000)) < 15360 ]];then
 	echo
 	echo "Not enough disk space to compile opencv!"
 	echo "Expand your Docker image to leave 15GB of free space."
 	echo "Force update or remove and re-install Zoneminder to allow more space if your compile did not complete."
+	exit
+fi
+
+#
+# Check for enough memory to compile opencv.
+#
+MEM_AVAILABLE=`cat /proc/meminfo | grep MemAvailable | /usr/bin/awk '{print $2}'`
+if [[ $((MEM_AVAILABLE/1000)) < 4096 ]];then
+	echo
+	echo "Not enough memory available to compile opencv!"
+	echo "You should have at least 3GB available."
+	echo "Check that you have not over committed SHM."
 	exit
 fi
 
@@ -82,12 +94,24 @@ fi
 #
 logger "Installing cuda toolkit..." -tEventServer
 cd ~
-mv /config/$CUDA_PIN /etc/apt/preferences.d/cuda-repository-pin-600
-dpkg -i /config/$CUDA_TOOL
+if [ -f  /config/$CUDA_PIN ]; then
+	cp /config/$CUDA_PIN /etc/apt/preferences.d/cuda-repository-pin-600
+else
+	echo "Please download CUDA_PIN."
+	exit
+fi
+
+if [ -f /config/$CUDA_TOOL ];then
+	dpkg -i /config/$CUDA_TOOL
+else
+	echo "Please download CUDA_TOOL paakage."
+	exit
+fi
+
 apt-key add $CUDA_KEY
 apt-get update
 apt-get -y upgrade -o Dpkg::Options::="--force-confold"
-apt-get -y install cuda
+apt-get -y install cuda-$CUDA_VER
 
 echo "export PATH=/usr/local/cuda/bin:$PATH" >/etc/profile.d/cuda.sh
 echo "export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/lib:$LD_LIBRARY_PATH" >> /etc/profile.d/cuda.sh
@@ -95,14 +119,27 @@ echo "export CUDADIR=/usr/local/cuda" >> /etc/profile.d/cuda.sh
 echo "export CUDA_HOME=/usr/local/cuda" >> /etc/profile.d/cuda.sh
 echo "/usr/local/cuda/lib64" > /etc/ld.so.conf.d/cuda.conf
 ldconfig
+
+#
+# check for expected install location
+#
+cudadir=/usr/local/cuda-$CUDA_VER
+if [ ! -d "$cudadir" ]; then
+    logger "Failed to install cuda toolkit"
+    exit
+elif [ ! -L "/usr/local/cuda" ]; then
+    ln -s $cudadir /usr/local/cuda
+fi
+
 logger "Cuda toolkit installed" -tEventServer
 
 if [ -x /usr/bin/nvidia-smi ]; then
 	echo "##################################################################################"
 	echo ""
-	/usr/bin/nvidia-smi -L
+	/usr/bin/nvidia-smi
 	echo "##################################################################################"
-	echo "Verify your Nvidia GPU is seen.  If not stop the script and fix the problem."
+	echo "Verify your Nvidia GPU is seen and the driver is loaded."
+	echo "If not stop the script and fix the problem."
 	echo "Press any key to continue, or ctrl-C to stop."
 	read -n 1 -s
 else
@@ -115,19 +152,18 @@ fi
 #
 logger "Installing cuDNN Package..." -tEventServer
 #
-dpkg -i /config/$CUDNN_RUN
-dpkg -i /config/$CUDNN_DEV
-#
-# check for expected install location
-#
-cudadir=/usr/local/cuda-$CUDA_VER
-if [ ! -d "$cudadir" ]; then
-    logger "Failed to install cuda toolkit"
-    exit
-elif [ ! -L "/usr/local/cuda" ]; then
-    ln -s $cudadir /usr/local/cuda
+if [ -f /config/$CUDNN_RUN ];then
+	dpkg -i /config/$CUDNN_RUN
+else
+	echo "Please download CUDNN_RUN paakage."
+	exit
 fi
-
+if [ -f /config/$CUDNN_DEV ];then
+	dpkg -i /config/$CUDNN_DEV
+else
+	echo "Please download CUDNN_DEV paakage."
+	exit
+fi
 logger "cuDNN Package installed" -tEventServer
 
 #
@@ -206,9 +242,16 @@ logger "Cleaning up..." -tEventServer
 
 cd ~
 rm -r opencv*
-apt-get -y remove cuda
-apt-get -y remove libjpeg-dev libpng-dev libtiff-dev libavcodec-dev libavformat-dev libswscale-dev
-apt-get -y remove libv4l-dev libxvidcore-dev libx264-dev libgtk-3-dev libatlas-base-dev gfortran
+apt-get -y remove cuda gfortran
 apt-get -y autoremove
 
 logger "Opencv compile completed." -tEventServer
+
+echo "Compile is complete."
+echo "Now check that the cv2 module in python is working."
+echo "Execute the following commands:"
+echo "  python3"
+echo "  import cv2"
+echo
+echo "Verify that the import does not show errors."
+echo "If it doesn't, then you have successfully compiled opencv."
