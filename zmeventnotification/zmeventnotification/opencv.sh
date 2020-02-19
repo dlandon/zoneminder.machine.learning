@@ -48,11 +48,23 @@ OPENCV_URL=https://github.com/opencv/opencv/archive/4.2.0.zip
 #############################################################################################################################
 
 #
+# Be sure we have enough disk space to compile opencv.
+#
+SPACE_AVAIL=`/bin/df / | /usr/bin/awk '{print $4}' | grep -v 'Available'`
+if [[ $((SPACE_AVAIL/1024)) < 15360 ]];then
+	echo
+	echo "Not enough disk space to compile opencv!"
+	echo "Expand your Docker image to leave 15GB of free space."
+	echo "Force update or remove and re-install Zoneminder to allow more space if your compile did not complete."
+	exit
+fi
+
+#
 # Insure hook processing has been installed.
 #
 if [ "$INSTALL_HOOK" != "1" ]; then
 	echo "Hook processing has to be installed before you can compile opencv!"
-	exit 1
+	exit
 fi
 
 logger "Compiling opencv with GPU Support" -tEventServer
@@ -165,6 +177,7 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE \
 	-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
 	-D HAVE_opencv_python3=ON \
 	-D PYTHON_EXECUTABLE=/usr/bin/python3 \
+	-D CUDA_ARCH_BIN=7.5 \
 	-D BUILD_EXAMPLES=OFF ..
 
 echo "######################################################################################"
