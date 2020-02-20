@@ -48,10 +48,33 @@ OPENCV_URL=https://github.com/opencv/opencv/archive/4.2.0.zip
 #############################################################################################################################
 
 #
+# Display warning.
+#
+echo "##################################################################################"
+echo
+echo "This script will compile 'opencv' with GPU support."
+echo
+echo "WARNING:"
+echo "The compile process needs 15GB of disk (Docker image) free space, at least 4GB of"
+echo "memory, and will generate a huge Zoneminder Docker that is 10GB in size!  The apt"
+echo "update will be disabled so you won't get Linux updates.  Zoneminder will no"
+echo "longer update.  In order to get updates you will have to force update, or remove"
+echo "and re-install the Zoneminder Docker and then re-compile 'opencv'."
+echo
+echo "There are several stopping points to give you a chance to see if the process is"
+echo "progressing without errors."
+echo
+echo "The compile script can take an hour or more to complete!"
+echo "Press any key to continue, or ctrl-C to stop."
+echo
+echo "##################################################################################"
+read -n 1 -s
+
+#
 # Be sure we have enough disk space to compile opencv.
 #
 SPACE_AVAIL=`/bin/df / | /usr/bin/awk '{print $4}' | grep -v 'Available'`
-if [[ $((SPACE_AVAIL/1000)) < 15360 ]];then
+if [[ $((SPACE_AVAIL/1000)) -lt 15360 ]];then
 	echo
 	echo "Not enough disk space to compile opencv!"
 	echo "Expand your Docker image to leave 15GB of free space."
@@ -63,10 +86,11 @@ fi
 # Check for enough memory to compile opencv.
 #
 MEM_AVAILABLE=`cat /proc/meminfo | grep MemAvailable | /usr/bin/awk '{print $2}'`
-if [[ $((MEM_AVAILABLE/1000)) < 4096 ]];then
+MEM_AVAILABLE=22042496
+if [[ $((MEM_AVAILABLE/1000)) -lt 4096 ]];then
 	echo
 	echo "Not enough memory available to compile opencv!"
-	echo "You should have at least 3GB available."
+	echo "You should have at least 4GB available."
 	echo "Check that you have not over committed SHM."
 	exit
 fi
@@ -135,7 +159,7 @@ logger "Cuda toolkit installed" -tEventServer
 
 if [ -x /usr/bin/nvidia-smi ]; then
 	echo "##################################################################################"
-	echo ""
+	echo
 	/usr/bin/nvidia-smi
 	echo "##################################################################################"
 	echo "Verify your Nvidia GPU is seen and the driver is loaded."
@@ -197,7 +221,7 @@ logger "Opencv source downloaded" -tEventServer
 logger "Compiling opencv..." -tEventServer
 
 echo "######################################################################################"
-echo ""
+echo
 
 cmake -D CMAKE_BUILD_TYPE=RELEASE \
 	-D CMAKE_INSTALL_PREFIX=/usr/local \
