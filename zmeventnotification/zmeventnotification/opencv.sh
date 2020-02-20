@@ -244,7 +244,6 @@ cd ~
 rm -r opencv*
 apt-mark hold cuda-$CUDA_VER
 apt-mark hold nvidia-utils-440
-apt-get -y autoremove
 
 logger "Opencv compile completed." -tEventServer
 
