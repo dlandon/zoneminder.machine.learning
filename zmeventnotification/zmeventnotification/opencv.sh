@@ -86,7 +86,6 @@ fi
 # Check for enough memory to compile opencv.
 #
 MEM_AVAILABLE=`cat /proc/meminfo | grep MemAvailable | /usr/bin/awk '{print $2}'`
-MEM_AVAILABLE=22042496
 if [[ $((MEM_AVAILABLE/1000)) -lt 4096 ]];then
 	echo
 	echo "Not enough memory available to compile opencv!"
