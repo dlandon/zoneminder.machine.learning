@@ -213,7 +213,6 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE \
 	-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
 	-D HAVE_opencv_python3=ON \
 	-D PYTHON_EXECUTABLE=/usr/bin/python3 \
-	-D CUDA_ARCH_BIN=7.5 \
 	-D BUILD_EXAMPLES=OFF ..
 
 echo "######################################################################################"
@@ -243,8 +242,8 @@ logger "Cleaning up..." -tEventServer
 
 cd ~
 rm -r opencv*
-apt-get -y remove cuda gfortran
-update-rc.d -f cuda remove
+apt-mark hold cuda-$CUDA_VER
+apt-mark hold nvidia-utils-440
 apt-get -y autoremove
 
 logger "Opencv compile completed." -tEventServer
