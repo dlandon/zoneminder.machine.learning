@@ -155,13 +155,13 @@ logger "Installing cuDNN Package..." -tEventServer
 if [ -f /config/$CUDNN_RUN ];then
 	dpkg -i /config/$CUDNN_RUN
 else
-	echo "Please download CUDNN_RUN paakage."
+	echo "Please download CUDNN_RUN package."
 	exit
 fi
 if [ -f /config/$CUDNN_DEV ];then
 	dpkg -i /config/$CUDNN_DEV
 else
-	echo "Please download CUDNN_DEV paakage."
+	echo "Please download CUDNN_DEV package."
 	exit
 fi
 logger "cuDNN Package installed" -tEventServer
