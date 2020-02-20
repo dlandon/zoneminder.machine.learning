@@ -14,13 +14,14 @@ ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
 
 ENV	PHP_VERS="7.4" \
 	ZM_VERS="1.34" \
-	ZMEVENT_VERS="5.7.4" \
+	ZMEVENT_VERS="5.7.7" \
 	SHMEM="50%" \
 	PUID="99" \
 	PGID="100"
 
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
+COPY zmeventnotification/ /root/zmeventnotification
 
 RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	add-apt-repository ppa:ondrej/php && \
