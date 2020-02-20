@@ -104,7 +104,7 @@ fi
 if [ -f /config/$CUDA_TOOL ];then
 	dpkg -i /config/$CUDA_TOOL
 else
-	echo "Please download CUDA_TOOL paakage."
+	echo "Please download CUDA_TOOL package."
 	exit
 fi
 
@@ -242,8 +242,7 @@ logger "Cleaning up..." -tEventServer
 
 cd ~
 rm -r opencv*
-apt-mark hold cuda-$CUDA_VER
-apt-mark hold nvidia-utils-440
+rm -f /etc/my_init.d/20_apt_update.sh
 
 logger "Opencv compile completed." -tEventServer
 
