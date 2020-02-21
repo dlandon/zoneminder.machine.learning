@@ -19,6 +19,18 @@ else
 	echo "File zm.conf already moved"
 fi
 
+# Get the latest ES bundle
+cd /root
+rm -rf zmeventnotification
+wget -q https://github.com/dlandon/zoneminder/raw/master/zmeventnotification/EventServer.tgz
+if [ -f EventServer.tgz ]; then
+	tar -xf EventServer.tgz
+	rm EventServer.tgz
+else
+	echo "Error: Cannot download the ES server bundle"
+	exit 1
+fi
+
 # Handle the zmeventnotification.ini file
 if [ -f /root/zmeventnotification/zmeventnotification.ini ]; then
 	echo "Moving zmeventnotification.ini"
@@ -273,7 +285,7 @@ mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=${SHMEM} tmpfs /dev/shm
 if [ "$INSTALL_HOOK" == "1" ]; then
 	echo "Installing machine learning modules & hooks..."
 
-	if [ -f /root/zmeventnotification/setup.py ]; then
+	if [ ! -f /root/setup.py ]; then
 		# If hook folder exists, copy files into image
 		if [ ! -d /config/hook ]; then
 			echo "Creating hook folder in config folder"
@@ -285,12 +297,12 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		# Python modules needed for hook processing
 		apt-get -y install python3-pip cmake
 
-		# pip3 will take care of installing dependent packages
+		# pip3 will take care on installing dependent packages
 		pip3 install future
 		pip3 install /root/zmeventnotification
 		pip3 install opencv-contrib-python
-	    rm -rf /root/zmeventnotification/zmes_hook_helpers
 	fi
+    rm -rf /root/zmeventnotification/zmes_hook_helpers
 
 	# Download models files
 	if [ "$INSTALL_TINY_YOLO" == "1" ]; then
@@ -393,7 +405,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
  		pip3 install face_recognition
 	fi
 
-	rm /root/zmeventnotification/setup.py
+	mv /root/zmeventnotification/setup.py /root/setup.py
 
 	echo "Hook installation completed"
 fi
