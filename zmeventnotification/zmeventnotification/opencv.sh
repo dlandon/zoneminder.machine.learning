@@ -8,13 +8,14 @@
 # You need to prepare for compiling the opencv with CUDA support.
 #
 # You need to start with a clean docker image if you are going to recompile opencv.
-# Unraid: This can be done by switching to "Advanced View" and clicking "Force Update".
-# Other Systems: Remove the docker image then reinstall it.
+# Unraid: This can be done by switching to "Advanced View" and clicking "Force Update",
+# or remove the Docker image then reinstall it.
 # Hook processing has to be enabled to run this script.
 #
-# Install the Unraid Nvidia plugin or the Nvidia docker on other systems and be sure your graphics card can be seen in the
-# Zoneminder Docker.
-# You will not get a proper compile if your graphics card is not seen.
+# Install the Unraid Nvidia plugin and be sure your graphics card can be seen in the
+# Zoneminder Docker.  This will be checked as part of the compile process.
+# You will not get a working compile if your graphics card is not seen.  It may appear
+# to compile prolerly but will not work.
 #
 # Download the cuDNN run time and dev packages for your GPU configuration.  You want the deb packages for Ubuntu 18.04.
 # You wll need to have an account with Nvidia to download these packages.
@@ -24,33 +25,36 @@
 CUDNN_RUN=libcudnn7_7.6.5.32-1+cuda10.2_amd64.deb
 CUDNN_DEV=libcudnn7-dev_7.6.5.32-1+cuda10.2_amd64.deb
 #
-# Download the cuda package for your GPU configuration.  You want the deb package for Ubuntu 18.04.
+# Download the cuda package.  Unraid uses 10.2.  You want the deb package for Ubuntu 18.04.
 # https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=deblocal
 # Place the download in the /config folder.
-#
-# Unraid has moved to driver version 440 and cuda 10.2
 #
 CUDA_TOOL=cuda-repo-ubuntu1804-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
 CUDA_PIN=cuda-ubuntu1804.pin
 CUDA_KEY=/var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
 CUDA_VER=10.2
 #
+# You need to determine the GPU architecture for your GPU.  Go to this website and select the correct architecture for
+# your GPU.  It is shown as the "Compute Capability".
+#
+# https://developer.nvidia.com/cuda-gpus
+#
+ARCH_BIN=7.5
+#
 #
 # Github URL for opencv zip file download.
 # Current default is to pull the version 4.2.0 release.
 #
 OPENCV_URL=https://github.com/opencv/opencv/archive/4.2.0.zip
+OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/4.2.0.zip
 #
-# Uncomment the following URL to pull commit to support cudnn for older nvidia gpus
-#
-# OPENCV_URL=https://github.com/opencv/opencv/archive/282fcb90dce76a55dc5f31246355fce2761a9eff.zip
-#
-# Once you are comfortable that opencv compiles properly you can run this script in a quiet mode so it will run'
+# Once you are comfortable that opencv compiles properly you can run this script in a quiet mode so it will run
 # without any user interaction.
 #
 #############################################################################################################################
 
-if [ $1 = 'quiet' ]; then
+QUIET_MODE=$1
+if [[ $QUIET_MODE == 'quiet' ]]; then
 	QUIET_MODE='yes'
 	echo "opencv.sh running in quiet mode."
 else
@@ -103,6 +107,8 @@ if [[ $((MEM_AVAILABLE/1000)) -lt 4096 ]];then
 	echo "Not enough memory available to compile opencv!"
 	echo "You should have at least 4GB available."
 	echo "Check that you have not over committed SHM."
+	echo "You can also stop Zoneminder to free up memory while you compile."
+	echo "  service zoneminder stop"
 	exit
 fi
 
@@ -175,10 +181,11 @@ if [ $QUIET_MODE != 'yes' ];then
 	if [ -x /usr/bin/nvidia-smi ]; then
 		echo "##################################################################################"
 		echo
-		/usr/bin/nvidia-smi
+		/usr/bin/nvidia-smi >/config/nvidia-smi.log
+		cat /config/nvidia-smi.log
 		echo "##################################################################################"
 		echo "Verify your Nvidia GPU is seen and the driver is loaded."
-		echo "If not stop the script and fix the problem."
+		echo "If not, stop the script and fix the problem."
 		echo "Press any key to continue, or ctrl-C to stop."
 		read -n 1 -s
 	else
@@ -218,7 +225,7 @@ logger "Cuda support packages installed" -tEventServer
 #
 logger "Downloading opencv source..." -tEventServer
 wget -O opencv.zip $OPENCV_URL
-wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.2.0.zip
+wget -O opencv_contrib.zip $OPENCV_CONTRIB_URL
 unzip opencv.zip
 unzip opencv_contrib.zip
 mv $(ls -d opencv-*) opencv
@@ -256,13 +263,14 @@ fi
 		-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
 		-D HAVE_opencv_python3=ON \
 		-D PYTHON_EXECUTABLE=/usr/bin/python3 \
-		-D CUDA_ARCH_BIN=7.5 \
-		-D BUILD_EXAMPLES=OFF ..
+		-D CUDA_ARCH_BIN=$ARCH_BIN \
+		-D BUILD_EXAMPLES=OFF .. >/config/cmake.log
+		cat /config/cmake.log
 
 if [ $QUIET_MODE != 'yes' ];then
 	echo "######################################################################################"
 	echo "Verify that CUDA and cuDNN are both enabled in the cmake output above."
-	echo "Look for the lines with CUDA and cuDNN."
+	echo "Look for the lines with CUDA and cuDNN." 
 	echo "You may have to scroll up the page to see them."
 	echo "If those lines don't show 'YES', then stop the script and fix the problem."
 	echo "Check that you have the correct versions of CUDA ond cuDNN for your GPU."
@@ -299,4 +307,4 @@ echo "  python3"
 echo "  import cv2"
 echo
 echo "Verify that the import does not show errors."
-echo "If it doesn't, then you have successfully compiled opencv."
+echo "If you don't see any errors, then you have successfully compiled opencv."
