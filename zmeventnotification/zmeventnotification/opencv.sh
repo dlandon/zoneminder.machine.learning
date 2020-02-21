@@ -276,4 +276,4 @@ echo "  python3"
 echo "  import cv2"
 echo
 echo "Verify that the import does not show errors."
-echo "If it doesn't, then you have successfully compiled opencv."
+echo "If there are no errors, then you have successfully compiled opencv."

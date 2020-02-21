@@ -88,7 +88,7 @@ The zmNinja Event Notification Server is accessed at port `9000`.  Security with
 #### Change Log
 
 2020-02-21
-- Fix uninstall and install of zmes_hooks when updating ES.
+- Fix uninstall and install of hooks when updating ES.
 
 2020-02-20
 - Update zmNinja Event Notification Server to version 5.7.7.
