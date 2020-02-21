@@ -45,30 +45,42 @@ OPENCV_URL=https://github.com/opencv/opencv/archive/4.2.0.zip
 #
 # OPENCV_URL=https://github.com/opencv/opencv/archive/282fcb90dce76a55dc5f31246355fce2761a9eff.zip
 #
+# Once you are comfortable that opencv compiles properly you can run this script in a quiet mode so it will run'
+# without any user interaction.
+#
 #############################################################################################################################
+
+if [ $1 = 'quiet' ]; then
+	QUIET_MODE='yes'
+	echo "opencv.sh running in quiet mode."
+else
+	QUIET_MODE='no'
+fi
 
 #
 # Display warning.
 #
-echo "##################################################################################"
-echo
-echo "This script will compile 'opencv' with GPU support."
-echo
-echo "WARNING:"
-echo "The compile process needs 15GB of disk (Docker image) free space, at least 4GB of"
-echo "memory, and will generate a huge Zoneminder Docker that is 10GB in size!  The apt"
-echo "update will be disabled so you won't get Linux updates.  Zoneminder will no"
-echo "longer update.  In order to get updates you will have to force update, or remove"
-echo "and re-install the Zoneminder Docker and then re-compile 'opencv'."
-echo
-echo "There are several stopping points to give you a chance to see if the process is"
-echo "progressing without errors."
-echo
-echo "The compile script can take an hour or more to complete!"
-echo "Press any key to continue, or ctrl-C to stop."
-echo
-echo "##################################################################################"
-read -n 1 -s
+if [ $QUIET_MODE != 'yes' ];then
+	echo "##################################################################################"
+	echo
+	echo "This script will compile 'opencv' with GPU support."
+	echo
+	echo "WARNING:"
+	echo "The compile process needs 15GB of disk (Docker image) free space, at least 4GB of"
+	echo "memory, and will generate a huge Zoneminder Docker that is 10GB in size!  The apt"
+	echo "update will be disabled so you won't get Linux updates.  Zoneminder will no"
+	echo "longer update.  In order to get updates you will have to force update, or remove"
+	echo "and re-install the Zoneminder Docker and then re-compile 'opencv'."
+	echo
+	echo "There are several stopping points to give you a chance to see if the process is"
+	echo "progressing without errors."
+	echo
+	echo "The compile script can take an hour or more to complete!"
+	echo "Press any key to continue, or ctrl-C to stop."
+	echo
+	echo "##################################################################################"
+	read -n 1 -s
+fi
 
 #
 # Be sure we have enough disk space to compile opencv.
@@ -156,20 +168,24 @@ fi
 
 logger "Cuda toolkit installed" -tEventServer
 
-if [ -x /usr/bin/nvidia-smi ]; then
-	echo "##################################################################################"
-	echo
-	/usr/bin/nvidia-smi
-	echo "##################################################################################"
-	echo "Verify your Nvidia GPU is seen and the driver is loaded."
-	echo "If not stop the script and fix the problem."
-	echo "Press any key to continue, or ctrl-C to stop."
-	read -n 1 -s
-else
-	echo "Cuda install failed.  'nvidia-smi' not found!"
-	exit
+#
+# Ask user to check that the GPU is seen.
+#
+if [ $QUIET_MODE != 'yes' ];then
+	if [ -x /usr/bin/nvidia-smi ]; then
+		echo "##################################################################################"
+		echo
+		/usr/bin/nvidia-smi
+		echo "##################################################################################"
+		echo "Verify your Nvidia GPU is seen and the driver is loaded."
+		echo "If not stop the script and fix the problem."
+		echo "Press any key to continue, or ctrl-C to stop."
+		read -n 1 -s
+	else
+		echo "Cuda install failed.  'nvidia-smi' not found!"
+		exit
+	fi
 fi
-
 #
 # Install cuDNN run time and dev packages
 #
@@ -219,33 +235,40 @@ logger "Opencv source downloaded" -tEventServer
 #
 logger "Compiling opencv..." -tEventServer
 
-echo "######################################################################################"
-echo
+#
+# Have user confirm that cuda and cudnn are enabled by the cmake.
+#
+if [ $QUIET_MODE != 'yes' ];then
+	echo "######################################################################################"
+	echo
+fi
+	cmake -D CMAKE_BUILD_TYPE=RELEASE \
+		-D CMAKE_INSTALL_PREFIX=/usr/local \
+		-D INSTALL_PYTHON_EXAMPLES=OFF \
+		-D INSTALL_C_EXAMPLES=OFF \
+		-D OPENCV_ENABLE_NONFREE=ON \
+		-D WITH_CUDA=ON \
+		-D WITH_CUDNN=ON \
+		-D OPENCV_DNN_CUDA=ON \
+		-D ENABLE_FAST_MATH=1 \
+		-D CUDA_FAST_MATH=1 \
+		-D WITH_CUBLAS=1 \
+		-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+		-D HAVE_opencv_python3=ON \
+		-D PYTHON_EXECUTABLE=/usr/bin/python3 \
+		-D CUDA_ARCH_BIN=7.5 \
+		-D BUILD_EXAMPLES=OFF ..
 
-cmake -D CMAKE_BUILD_TYPE=RELEASE \
-	-D CMAKE_INSTALL_PREFIX=/usr/local \
-	-D INSTALL_PYTHON_EXAMPLES=OFF \
-	-D INSTALL_C_EXAMPLES=OFF \
-	-D OPENCV_ENABLE_NONFREE=ON \
-	-D WITH_CUDA=ON \
-	-D WITH_CUDNN=ON \
-	-D OPENCV_DNN_CUDA=ON \
-	-D ENABLE_FAST_MATH=1 \
-	-D CUDA_FAST_MATH=1 \
-	-D WITH_CUBLAS=1 \
-	-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
-	-D HAVE_opencv_python3=ON \
-	-D PYTHON_EXECUTABLE=/usr/bin/python3 \
-	-D BUILD_EXAMPLES=OFF ..
-
-echo "######################################################################################"
-echo "Verify that CUDA and cuDNN are both enabled in the cmake output above."
-echo "Look for the lines with CUDA and cuDNN."
-echo "You may have to scroll up the page to see them."
-echo "If those lines don't show 'YES', then stop the script and fix the problem."
-echo "Check that you have the correct versions of CUDA ond cuDNN for your GPU."
-echo "Press any key to continue, or ctrl-C to stop."
-read -n 1 -s
+if [ $QUIET_MODE != 'yes' ];then
+	echo "######################################################################################"
+	echo "Verify that CUDA and cuDNN are both enabled in the cmake output above."
+	echo "Look for the lines with CUDA and cuDNN."
+	echo "You may have to scroll up the page to see them."
+	echo "If those lines don't show 'YES', then stop the script and fix the problem."
+	echo "Check that you have the correct versions of CUDA ond cuDNN for your GPU."
+	echo "Press any key to continue, or ctrl-C to stop."
+	read -n 1 -s
+fi
 
 make -j$(nproc)
 make install
@@ -276,4 +299,4 @@ echo "  python3"
 echo "  import cv2"
 echo
 echo "Verify that the import does not show errors."
-echo "If there are no errors, then you have successfully compiled opencv."
+echo "If it doesn't, then you have successfully compiled opencv."
