@@ -57,12 +57,18 @@ else
 	echo "File secrets.ini already moved"
 fi
 
+# Create opencv folder if it doesn't exist
+if [ ! -d /config/opencv ]; then
+	echo "Creating opencv folder in config folder"
+	mkdir /config/opencv
+fi
+
 # Handle the opencv.sh file
 if [ -f /root/zmeventnotification/opencv.sh ]; then
 	echo "Moving opencv.sh"
-	cp /root/zmeventnotification/opencv.sh /config/opencv.sh.default
-	if [ ! -f /config/opencv.sh ]; then
-		mv /root/zmeventnotification/opencv.sh /config/opencv.sh
+	cp /root/zmeventnotification/opencv.sh /config/opencv/opencv.sh.default
+	if [ ! -f /config/opencv/opencv.sh ]; then
+		mv /root/zmeventnotification/opencv.sh /config/opencv/opencv.sh
 	else
 		rm -rf /root/zmeventnotification/opencv.sh
 	fi
@@ -73,12 +79,7 @@ fi
 # Handle the debug_opencv.sh file
 if [ -f /root/zmeventnotification/debug_opencv.sh ]; then
 	echo "Moving debug_opencv.sh"
-	cp /root/zmeventnotification/debug_opencv.sh /config/debug_opencv.sh.default
-	if [ ! -f /config/debug_opencv.sh ]; then
-		mv /root/zmeventnotification/debug_opencv.sh /config/debug_opencv.sh
-	else
-		rm -rf /root/zmeventnotification/debug_opencv.sh
-	fi
+	mv /root/zmeventnotification/debug_opencv.sh /config/opencv/debug_opencv.sh
 else
 	echo "File debug_opencv.sh already moved"
 fi
@@ -177,19 +178,15 @@ chown -R $PUID:$PGID /config/zmeventnotification.*
 chmod -R 666 /config/zmeventnotification.*
 chown -R $PUID:$PGID /config/secrets.ini
 chmod -R 666 /config/secrets.ini
-chown -R $PUID:$PGID /config/opencv.sh
-chmod -R 666 /config/opencv.sh
-chown -R $PUID:$PGID /config/debug_opencv.sh
-chmod -R 666 /config/debug_opencv.sh
-chown -R $PUID:$PGID /config/opencv.sh.default
-chmod -R 666 /config/opencv.sh.default
+chown -R $PUID:$PGID /config/opencv
+chmod -R 666 /config/opencv
 chown -R $PUID:$PGID /config/keys
 chmod -R 777 /config/keys
 chown -R www-data:www-data /config/push/
 chown -R www-data:www-data /var/lib/zmeventnotification/
-chmod +x /config/opencv.sh
-chmod +x /config/debug_opencv.sh
-chmod +x /config/opencv.sh.default
+chmod +x /config/opencv/opencv.sh
+chmod +x /config/opencv/debug_opencv.sh
+chmod +x /config/opencv/opencv.sh.default
 
 # Create events folder
 if [ ! -d /var/cache/zoneminder/events ]; then

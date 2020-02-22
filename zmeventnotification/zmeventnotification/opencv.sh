@@ -20,14 +20,14 @@
 # Download the cuDNN run time and dev packages for your GPU configuration.  You want the deb packages for Ubuntu 18.04.
 # You wll need to have an account with Nvidia to download these packages.
 # https://developer.nvidia.com/rdp/form/cudnn-download-survey
-# Place them in the /config folder.
+# Place them in the /config/opencv folder.
 #
 CUDNN_RUN=libcudnn7_7.6.5.32-1+cuda10.2_amd64.deb
 CUDNN_DEV=libcudnn7-dev_7.6.5.32-1+cuda10.2_amd64.deb
 #
 # Download the cuda package.  Unraid uses 10.2.  You want the deb package for Ubuntu 18.04.
 # https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=deblocal
-# Place the download in the /config folder.
+# Place the download in the /config/opencv folder.
 #
 CUDA_TOOL=cuda-repo-ubuntu1804-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
 CUDA_PIN=cuda-ubuntu1804.pin
@@ -87,6 +87,11 @@ if [ $QUIET_MODE != 'yes' ];then
 fi
 
 #
+# Remove log files.
+#
+rm -f *.log
+
+#
 # Be sure we have enough disk space to compile opencv.
 #
 SPACE_AVAIL=`/bin/df / | /usr/bin/awk '{print $4}' | grep -v 'Available'`
@@ -125,9 +130,9 @@ logger "Compiling opencv with GPU Support" -tEventServer
 #
 # Remove hook installed opencv module and face-recognition module
 #
-pip3 uninstall opencv-contrib-python
+pip3 uninstall -y opencv-contrib-python
 if [ "$INSTALL_FACE" == "1" ]; then
-	pip3 uninstall face-recognition
+	pip3 -y uninstall face-recognition
 fi
 
 #
@@ -135,15 +140,15 @@ fi
 #
 logger "Installing cuda toolkit..." -tEventServer
 cd ~
-if [ -f  /config/$CUDA_PIN ]; then
-	cp /config/$CUDA_PIN /etc/apt/preferences.d/cuda-repository-pin-600
+if [ -f  /config/opencv/$CUDA_PIN ]; then
+	cp /config/opencv/$CUDA_PIN /etc/apt/preferences.d/cuda-repository-pin-600
 else
 	echo "Please download CUDA_PIN."
 	exit
 fi
 
-if [ -f /config/$CUDA_TOOL ];then
-	dpkg -i /config/$CUDA_TOOL
+if [ -f /config/opencv/$CUDA_TOOL ];then
+	dpkg -i /config/opencv/$CUDA_TOOL
 else
 	echo "Please download CUDA_TOOL package."
 	exit
@@ -177,12 +182,12 @@ logger "Cuda toolkit installed" -tEventServer
 #
 # Ask user to check that the GPU is seen.
 #
+/usr/bin/nvidia-smi >/config/opencv/nvidia-smi.log
 if [ $QUIET_MODE != 'yes' ];then
 	if [ -x /usr/bin/nvidia-smi ]; then
 		echo "##################################################################################"
 		echo
-		/usr/bin/nvidia-smi >/config/nvidia-smi.log
-		cat /config/nvidia-smi.log
+		cat /config/opencv/nvidia-smi.log
 		echo "##################################################################################"
 		echo "Verify your Nvidia GPU is seen and the driver is loaded."
 		echo "If not, stop the script and fix the problem."
@@ -198,14 +203,14 @@ fi
 #
 logger "Installing cuDNN Package..." -tEventServer
 #
-if [ -f /config/$CUDNN_RUN ];then
-	dpkg -i /config/$CUDNN_RUN
+if [ -f /config/opencv/$CUDNN_RUN ];then
+	dpkg -i /config/opencv/$CUDNN_RUN
 else
 	echo "Please download CUDNN_RUN package."
 	exit
 fi
-if [ -f /config/$CUDNN_DEV ];then
-	dpkg -i /config/$CUDNN_DEV
+if [ -f /config/opencv/$CUDNN_DEV ];then
+	dpkg -i /config/opencv/$CUDNN_DEV
 else
 	echo "Please download CUDNN_DEV package."
 	exit
@@ -245,29 +250,29 @@ logger "Compiling opencv..." -tEventServer
 #
 # Have user confirm that cuda and cudnn are enabled by the cmake.
 #
+cmake -D CMAKE_BUILD_TYPE=RELEASE \
+	-D CMAKE_INSTALL_PREFIX=/usr/local \
+	-D INSTALL_PYTHON_EXAMPLES=OFF \
+	-D INSTALL_C_EXAMPLES=OFF \
+	-D OPENCV_ENABLE_NONFREE=ON \
+	-D WITH_CUDA=ON \
+	-D WITH_CUDNN=ON \
+	-D OPENCV_DNN_CUDA=ON \
+	-D ENABLE_FAST_MATH=1 \
+	-D CUDA_FAST_MATH=1 \
+	-D WITH_CUBLAS=1 \
+	-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+	-D HAVE_opencv_python3=ON \
+	-D PYTHON_EXECUTABLE=/usr/bin/python3 \
+	-D PYTHON2_EXECUTABLE=/usr/bin/python2 \
+	-D CUDA_ARCH_BIN=$ARCH_BIN \
+	-D BUILD_EXAMPLES=OFF .. >/config/opencv/cmake.log
+
 if [ $QUIET_MODE != 'yes' ];then
 	echo "######################################################################################"
 	echo
-fi
-	cmake -D CMAKE_BUILD_TYPE=RELEASE \
-		-D CMAKE_INSTALL_PREFIX=/usr/local \
-		-D INSTALL_PYTHON_EXAMPLES=OFF \
-		-D INSTALL_C_EXAMPLES=OFF \
-		-D OPENCV_ENABLE_NONFREE=ON \
-		-D WITH_CUDA=ON \
-		-D WITH_CUDNN=ON \
-		-D OPENCV_DNN_CUDA=ON \
-		-D ENABLE_FAST_MATH=1 \
-		-D CUDA_FAST_MATH=1 \
-		-D WITH_CUBLAS=1 \
-		-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
-		-D HAVE_opencv_python3=ON \
-		-D PYTHON_EXECUTABLE=/usr/bin/python3 \
-		-D CUDA_ARCH_BIN=$ARCH_BIN \
-		-D BUILD_EXAMPLES=OFF .. >/config/cmake.log
-		cat /config/cmake.log
-
-if [ $QUIET_MODE != 'yes' ];then
+	cat /config/opencv/cmake.log
+	echo
 	echo "######################################################################################"
 	echo "Verify that CUDA and cuDNN are both enabled in the cmake output above."
 	echo "Look for the lines with CUDA and cuDNN." 
@@ -296,7 +301,10 @@ logger "Cleaning up..." -tEventServer
 
 cd ~
 rm -r opencv*
-rm -f /etc/my_init.d/20_apt_update.sh
+
+rm -f /etc/apt/preferences.d/cuda-repository-pin-600
+apt-key del 7FA2AF80
+rm -f /etc/apt/sources.list.d/cuda-*
 
 logger "Opencv compile completed." -tEventServer
 
