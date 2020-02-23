@@ -84,6 +84,10 @@ else
 	echo "File debug_opencv.sh already moved"
 fi
 
+if [ ! -f /config/opencv/opencv_ok ]; then
+	echo "no" > /config/opencv/opencv_ok
+fi
+
 # Handle the zmeventnotification.pl & daemon files
 if [ -f /root/zmeventnotification/zmeventnotification.pl ]; then
 	echo "Moving the event notification server"
@@ -310,7 +314,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		# Python modules needed for hook processing
 		apt-get -y install python3-pip cmake
 
-		# pip3 will take care on installing dependent packages
+		# pip3 will take care of installing dependent packages
 		pip3 install future
 		pip3 install /root/zmeventnotification
 		pip3 install opencv-contrib-python
@@ -421,9 +425,18 @@ if [ "$INSTALL_HOOK" == "1" ]; then
  		pip3 install face_recognition
 	fi
 
-	mv /root/zmeventnotification/setup.py /root/setup.py
-
 	echo "Hook installation completed"
+
+	# compile opencv
+	if [ ! -f /root/setup.py ]; then
+		if [ `cat /config/opencv/opencv_ok` = 'yes' ]; then
+			if [ -x /config/opencv/opencv.sh ]; then
+				/config/opencv/opencv.sh quiet >/dev/null &
+			fi
+		fi
+	fi
+
+	mv /root/zmeventnotification/setup.py /root/setup.py
 fi
 
 echo "Starting services..."

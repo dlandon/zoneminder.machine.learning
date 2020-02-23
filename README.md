@@ -87,6 +87,11 @@ The zmNinja Event Notification Server is accessed at port `9000`.  Security with
 
 #### Change Log
 
+2020-02-23
+- Fix reboot apt update of cuda failing again.
+- Set up unattended re-compile of opencv when docker updates.
+- More opencv script changes.
+
 2020-02-22
 - Move all opencv stuff to /config/opencv/ folder.
 - Fix reboot apt update of cuda failing.

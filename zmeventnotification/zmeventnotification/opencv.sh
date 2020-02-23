@@ -8,55 +8,54 @@
 # You need to prepare for compiling the opencv with CUDA support.
 #
 # You need to start with a clean docker image if you are going to recompile opencv.
-# Unraid: This can be done by switching to "Advanced View" and clicking "Force Update",
+# This can be done by switching to "Advanced View" and clicking "Force Update",
 # or remove the Docker image then reinstall it.
 # Hook processing has to be enabled to run this script.
 #
 # Install the Unraid Nvidia plugin and be sure your graphics card can be seen in the
 # Zoneminder Docker.  This will be checked as part of the compile process.
 # You will not get a working compile if your graphics card is not seen.  It may appear
-# to compile prolerly but will not work.
+# to compile properly but will not work.
 #
 # Download the cuDNN run time and dev packages for your GPU configuration.  You want the deb packages for Ubuntu 18.04.
 # You wll need to have an account with Nvidia to download these packages.
 # https://developer.nvidia.com/rdp/form/cudnn-download-survey
-# Place them in the /config/opencv folder.
+# Place them in the /config/opencv/ folder.
 #
 CUDNN_RUN=libcudnn7_7.6.5.32-1+cuda10.2_amd64.deb
 CUDNN_DEV=libcudnn7-dev_7.6.5.32-1+cuda10.2_amd64.deb
 #
 # Download the cuda package.  Unraid uses 10.2.  You want the deb package for Ubuntu 18.04.
 # https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=deblocal
-# Place the download in the /config/opencv folder.
+# Place the download in the /config/opencv/ folder.
 #
 CUDA_TOOL=cuda-repo-ubuntu1804-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
 CUDA_PIN=cuda-ubuntu1804.pin
 CUDA_KEY=/var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
 CUDA_VER=10.2
 #
-# You need to determine the GPU architecture for your GPU.  Go to this website and select the correct architecture for
-# your GPU.  It is shown as the "Compute Capability".
-#
-# https://developer.nvidia.com/cuda-gpus
-#
-ARCH_BIN=7.5
-#
 #
 # Github URL for opencv zip file download.
 # Current default is to pull the version 4.2.0 release.
+#   Note: You shouldn't need to change these.
 #
-OPENCV_URL=https://github.com/opencv/opencv/archive/4.2.0.zip
+OPENCV_URL=https://github.com/opencv/opencv/archive/282fcb90dce76a55dc5f31246355fce2761a9eff.zip
 OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/4.2.0.zip
 #
-# Once you are comfortable that opencv compiles properly you can run this script in a quiet mode so it will run
-# without any user interaction.
+# You can run this script in a quiet mode so it will run without any user interaction.
+#
+# Once you are satisfied that the compile is working, run the following command:
+#   echo "yes" > opencv_ok
+# 
+# The opencv.sh script will run when the Docker is updated so you won't have to do it manually.
 #
 #############################################################################################################################
 
 QUIET_MODE=$1
 if [[ $QUIET_MODE == 'quiet' ]]; then
 	QUIET_MODE='yes'
-	echo "opencv.sh running in quiet mode."
+	echo "Running in quiet mode."
+	sleep 10
 else
 	QUIET_MODE='no'
 fi
@@ -89,17 +88,20 @@ fi
 #
 # Remove log files.
 #
-rm -f *.log
+rm -f /config/opencv/*.log
 
 #
 # Be sure we have enough disk space to compile opencv.
 #
 SPACE_AVAIL=`/bin/df / | /usr/bin/awk '{print $4}' | grep -v 'Available'`
 if [[ $((SPACE_AVAIL/1000)) -lt 15360 ]];then
-	echo
-	echo "Not enough disk space to compile opencv!"
-	echo "Expand your Docker image to leave 15GB of free space."
-	echo "Force update or remove and re-install Zoneminder to allow more space if your compile did not complete."
+	if [ $QUIET_MODE != 'yes' ];then
+		echo
+		echo "Not enough disk space to compile opencv!"
+		echo "Expand your Docker image to leave 15GB of free space."
+		echo "Force update or remove and re-install Zoneminder to allow more space if your compile did not complete."
+	fi
+	logger "Not enough disk space to compile opencv!" -tEventServer
 	exit
 fi
 
@@ -108,12 +110,15 @@ fi
 #
 MEM_AVAILABLE=`cat /proc/meminfo | grep MemAvailable | /usr/bin/awk '{print $2}'`
 if [[ $((MEM_AVAILABLE/1000)) -lt 4096 ]];then
-	echo
-	echo "Not enough memory available to compile opencv!"
-	echo "You should have at least 4GB available."
-	echo "Check that you have not over committed SHM."
-	echo "You can also stop Zoneminder to free up memory while you compile."
-	echo "  service zoneminder stop"
+	if [ $QUIET_MODE != 'yes' ];then
+		echo
+		echo "Not enough memory available to compile opencv!"
+		echo "You should have at least 4GB available."
+		echo "Check that you have not over committed SHM."
+		echo "You can also stop Zoneminder to free up memory while you compile."
+		echo "  service zoneminder stop"
+	fi
+	logger "Not enough memory available to compile opencv!" -tEventServer
 	exit
 fi
 
@@ -144,6 +149,7 @@ if [ -f  /config/opencv/$CUDA_PIN ]; then
 	cp /config/opencv/$CUDA_PIN /etc/apt/preferences.d/cuda-repository-pin-600
 else
 	echo "Please download CUDA_PIN."
+	logger "CUDA_PIN not downloaded!" -tEventServer
 	exit
 fi
 
@@ -151,10 +157,11 @@ if [ -f /config/opencv/$CUDA_TOOL ];then
 	dpkg -i /config/opencv/$CUDA_TOOL
 else
 	echo "Please download CUDA_TOOL package."
+	logger "CUDA_TOOL package not downloaded!" -tEventServer
 	exit
 fi
 
-apt-key add $CUDA_KEY
+apt-key add $CUDA_KEY >/dev/null
 apt-get update
 apt-get -y upgrade -o Dpkg::Options::="--force-confold"
 apt-get -y install cuda-$CUDA_VER
@@ -169,12 +176,13 @@ ldconfig
 #
 # check for expected install location
 #
-cudadir=/usr/local/cuda-$CUDA_VER
-if [ ! -d "$cudadir" ]; then
-    logger "Failed to install cuda toolkit"
+CUDADIR=/usr/local/cuda-$CUDA_VER
+if [ ! -d "$CUDADIR" ]; then
+	echo "Failed to install cuda toolkit!"
+    logger "Failed to install cuda toolkit!" -tEventServer
     exit
 elif [ ! -L "/usr/local/cuda" ]; then
-    ln -s $cudadir /usr/local/cuda
+    ln -s $CUDADIR /usr/local/cuda
 fi
 
 logger "Cuda toolkit installed" -tEventServer
@@ -207,12 +215,14 @@ if [ -f /config/opencv/$CUDNN_RUN ];then
 	dpkg -i /config/opencv/$CUDNN_RUN
 else
 	echo "Please download CUDNN_RUN package."
+	logger "CUDNN_RUN package not downloaded!" -tEventServer
 	exit
 fi
 if [ -f /config/opencv/$CUDNN_DEV ];then
 	dpkg -i /config/opencv/$CUDNN_DEV
 else
 	echo "Please download CUDNN_DEV package."
+	logger "CUDNN_DEV package not downloaded!" -tEventServer
 	exit
 fi
 logger "cuDNN Package installed" -tEventServer
@@ -229,8 +239,8 @@ logger "Cuda support packages installed" -tEventServer
 # Get opencv source
 #
 logger "Downloading opencv source..." -tEventServer
-wget -O opencv.zip $OPENCV_URL
-wget -O opencv_contrib.zip $OPENCV_CONTRIB_URL
+wget -q -O opencv.zip $OPENCV_URL
+wget -q -O opencv_contrib.zip $OPENCV_CONTRIB_URL
 unzip opencv.zip
 unzip opencv_contrib.zip
 mv $(ls -d opencv-*) opencv
@@ -265,7 +275,6 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE \
 	-D HAVE_opencv_python3=ON \
 	-D PYTHON_EXECUTABLE=/usr/bin/python3 \
 	-D PYTHON2_EXECUTABLE=/usr/bin/python2 \
-	-D CUDA_ARCH_BIN=$ARCH_BIN \
 	-D BUILD_EXAMPLES=OFF .. >/config/opencv/cmake.log
 
 if [ $QUIET_MODE != 'yes' ];then
@@ -284,6 +293,8 @@ if [ $QUIET_MODE != 'yes' ];then
 fi
 
 make -j$(nproc)
+
+logger "Installing opencv..." -tEventServer
 make install
 ldconfig
 
@@ -306,11 +317,20 @@ rm -f /etc/my_init.d/20_apt_update.sh
 
 logger "Opencv compile completed." -tEventServer
 
-echo "Compile is complete."
-echo "Now check that the cv2 module in python is working."
-echo "Execute the following commands:"
-echo "  python3"
-echo "  import cv2"
-echo
-echo "Verify that the import does not show errors."
-echo "If you don't see any errors, then you have successfully compiled opencv."
+if [ $QUIET_MODE != 'yes' ];then
+	echo "Compile is complete."
+	echo "Now check that the cv2 module in python is working."
+	echo "Execute the following commands:"
+	echo "  python3"
+	echo "  import cv2"
+	echo
+	echo "Verify that the import does not show errors."
+	echo "If you don't see any errors, then you have successfully compiled opencv."
+	echo
+	echo "Once you are satisfied that the compile is working, run the following"
+	echo "command:"
+	echo "  echo "yes" > opencv_ok"
+	echo
+	echo "The opencv.sh script will run when the Docker is updated so you won't"
+	echo "have to do it manually."
+fi
