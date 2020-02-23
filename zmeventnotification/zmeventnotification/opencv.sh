@@ -302,9 +302,7 @@ logger "Cleaning up..." -tEventServer
 cd ~
 rm -r opencv*
 
-rm -f /etc/apt/preferences.d/cuda-repository-pin-600
-apt-key del 7FA2AF80
-rm -f /etc/apt/sources.list.d/cuda-*
+rm -f /etc/my_init.d/20_apt_update.sh
 
 logger "Opencv compile completed." -tEventServer
 
