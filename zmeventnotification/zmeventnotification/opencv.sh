@@ -8,7 +8,7 @@
 # You need to prepare for compiling the opencv with CUDA support.
 #
 # You need to start with a clean docker image if you are going to recompile opencv.
-# This can be done by switching to "Advanced View" and clicking "Force Update",
+# This can be done by switching to "Advanced View" and clicking "Force Update", 
 # or remove the Docker image then reinstall it.
 # Hook processing has to be enabled to run this script.
 #
@@ -164,7 +164,7 @@ fi
 apt-key add $CUDA_KEY >/dev/null
 apt-get update
 apt-get -y upgrade -o Dpkg::Options::="--force-confold"
-apt-get -y install cuda-$CUDA_VER
+apt-get -y install cuda-toolkit-$CUDA_VER
 
 echo "export PATH=/usr/local/cuda/bin:$PATH" >/etc/profile.d/cuda.sh
 echo "export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/lib:$LD_LIBRARY_PATH" >> /etc/profile.d/cuda.sh
@@ -190,21 +190,21 @@ logger "Cuda toolkit installed" -tEventServer
 #
 # Ask user to check that the GPU is seen.
 #
-/usr/bin/nvidia-smi >/config/opencv/nvidia-smi.log
-if [ $QUIET_MODE != 'yes' ];then
-	if [ -x /usr/bin/nvidia-smi ]; then
-		echo "##################################################################################"
-		echo
-		cat /config/opencv/nvidia-smi.log
-		echo "##################################################################################"
-		echo "Verify your Nvidia GPU is seen and the driver is loaded."
-		echo "If not, stop the script and fix the problem."
-		echo "Press any key to continue, or ctrl-C to stop."
-		read -n 1 -s
-	else
-		echo "Cuda install failed.  'nvidia-smi' not found!"
-		exit
+if [ -x /usr/bin/nvidia-smi ]; then
+	/usr/bin/nvidia-smi >/config/opencv/nvidia-smi.log
+	if [ $QUIET_MODE != 'yes' ];then
+			echo "##################################################################################"
+			echo
+			cat /config/opencv/nvidia-smi.log
+			echo "##################################################################################"
+			echo "Verify your Nvidia GPU is seen and the driver is loaded."
+			echo "If not, stop the script and fix the problem."
+			echo "Press any key to continue, or ctrl-C to stop."
+			read -n 1 -s
 	fi
+else
+	echo "'nvidia-smi' not found!  Check that the Nvidia drivers are installed."
+	logger "'nvidia-smi' not found!  Check that the Nvidia drivers are installed." -tEventServer
 fi
 #
 # Install cuDNN run time and dev packages
@@ -313,9 +313,7 @@ logger "Cleaning up..." -tEventServer
 cd ~
 rm -r opencv*
 
-rm -f /etc/my_init.d/20_apt_update.sh
-
-logger "Opencv compile completed." -tEventServer
+logger "Opencv compile completed" -tEventServer
 
 if [ $QUIET_MODE != 'yes' ];then
 	echo "Compile is complete."
