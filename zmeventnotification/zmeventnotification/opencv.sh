@@ -312,6 +312,7 @@ logger "Cleaning up..." -tEventServer
 
 cd ~
 rm -r opencv*
+rm /etc/my_init.d/20_apt_update.sh
 
 logger "Opencv compile completed" -tEventServer
 
