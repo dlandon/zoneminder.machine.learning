@@ -13,9 +13,11 @@
 # Hook processing has to be enabled to run this script.
 #
 # Install the Unraid Nvidia plugin and be sure your graphics card can be seen in the
-# Zoneminder Docker.  This will be checked as part of the compile process.
+# Zoneminder Docker.  This will also be checked as part of the compile process.
 # You will not get a working compile if your graphics card is not seen.  It may appear
 # to compile properly but will not work.
+#
+# The GPU architectures supported with cuda version 10.2 are all >= 3.0.
 #
 # Download the cuDNN run time and dev packages for your GPU configuration.  You want the deb packages for Ubuntu 18.04.
 # You wll need to have an account with Nvidia to download these packages.
@@ -25,7 +27,7 @@
 CUDNN_RUN=libcudnn7_7.6.5.32-1+cuda10.2_amd64.deb
 CUDNN_DEV=libcudnn7-dev_7.6.5.32-1+cuda10.2_amd64.deb
 #
-# Download the cuda package.  Unraid uses 10.2.  You want the deb package for Ubuntu 18.04.
+# Download the cuda tools package.  Unraid uses 10.2.  You want the deb package for Ubuntu 18.04.
 # https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=deblocal
 # Place the download in the /config/opencv/ folder.
 #
@@ -130,15 +132,15 @@ if [ "$INSTALL_HOOK" != "1" ]; then
 	exit
 fi
 
-logger "Compiling opencv with GPU Support" -tEventServer
-
 #
 # Remove hook installed opencv module and face-recognition module
 #
 pip3 uninstall -y opencv-contrib-python
 if [ "$INSTALL_FACE" == "1" ]; then
-	pip3 -y uninstall face-recognition
+	pip3 uninstall -y face-recognition
 fi
+
+logger "Compiling opencv with GPU Support" -tEventServer
 
 #
 # Install cuda toolkit
@@ -322,6 +324,7 @@ if [ $QUIET_MODE != 'yes' ];then
 	echo "Execute the following commands:"
 	echo "  python3"
 	echo "  import cv2"
+	echo "  Ctrl-D to exit"
 	echo
 	echo "Verify that the import does not show errors."
 	echo "If you don't see any errors, then you have successfully compiled opencv."
