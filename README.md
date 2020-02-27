@@ -10,6 +10,9 @@ This verson will now upgrade from previous versions.
 
 You can donate [here](https://www.paypal.com/us/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=EJGPC7B5CS66E).
 
+###Support
+Go to the Zoneminder Forum [here](https://forums.zoneminder.com/) for support.
+
 ### Installation
 Install the docker by going to a command line and enter the command:
 
