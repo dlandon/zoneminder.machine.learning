@@ -28,7 +28,6 @@ if [ -f EventServer.tgz ]; then
 	rm EventServer.tgz
 else
 	echo "Error: Cannot download the ES server bundle"
-	exit 1
 fi
 
 # Handle the zmeventnotification.ini file

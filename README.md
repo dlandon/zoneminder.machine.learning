@@ -89,6 +89,8 @@ To access the Zoneminder gui, browse to: `https://<your host ip>:8443/zm`
 The zmNinja Event Notification Server is accessed at port `9000`.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 #### Change Log
+2020-02-29
+- Fix docker failure when it can't update.
 
 2020-02-23
 - Fix reboot apt update of cuda failing again.
