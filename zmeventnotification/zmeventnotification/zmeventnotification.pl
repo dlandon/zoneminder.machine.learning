@@ -64,7 +64,7 @@ if ( !try_use('JSON') ) {
 #
 # ==========================================================================
 
-my $app_version = '5.7.7 - Docker';
+my $app_version = '5.9-Docker';
 
 # ==========================================================================
 #
@@ -88,6 +88,9 @@ use constant {
   DEFAULT_MQTT_SERVER        => '127.0.0.1',
   DEFAULT_MQTT_TICK_INTERVAL => 15,
   DEFAULT_FCM_TOKEN_FILE     => '/var/lib/zmeventnotification/push/tokens.txt',
+
+  DEFAULT_USE_API_PUSH        => 'no',
+
   DEFAULT_BASE_DATA_PATH     => '/var/lib/zmeventnotification',
   DEFAULT_SSL_ENABLE         => 'yes',
   DEFAULT_CUSTOMIZE_VERBOSE  => 'no',
@@ -172,6 +175,10 @@ my $mqtt_last_tick_time = time();
 
 my $use_fcm;
 my $fcm_api_key;
+
+my $use_api_push;
+my $api_push_script;
+
 my $token_file;
 my $fcm_date_format;
 
@@ -439,6 +446,17 @@ sub loadEsConfigSettings {
   $fcm_date_format =
     config_get_val( $config, 'fcm', 'date_format', DEFAULT_FCM_DATE_FORMAT );
 
+  $use_api_push = config_get_val ($config, 'push', 'use_api_push',DEFAULT_USE_API_PUSH );
+  if ($use_api_push) {
+    $api_push_script = config_get_val ($config, 'push', 'api_push_script');
+    Error ("You have API push enabled, but no script to handle API pushes") if (!$api_push_script);
+
+  }
+  
+
+
+
+
   $token_file =
     config_get_val( $config, 'fcm', 'token_file', DEFAULT_FCM_TOKEN_FILE );
   $ssl_enabled = config_get_val( $config, 'ssl', 'enable', DEFAULT_SSL_ENABLE );
@@ -576,6 +594,9 @@ Monitor reload interval .............. ${\(value_or_undefined($monitor_reload_in
 Auth enabled ......................... ${\(yes_or_no($auth_enabled))}
 Auth timeout ......................... ${\(value_or_undefined($auth_timeout))}
 
+Use API Push.......................... ${\(yes_or_no($use_api_push))}
+API Push Script....................... ${\(value_or_undefined($api_push_script))}
+
 Use FCM .............................. ${\(yes_or_no($use_fcm))}
 FCM Date Format....................... ${\(value_or_undefined($fcm_date_format))}
 FCM API key .......................... ${\(present_or_not($fcm_api_key))}
@@ -645,7 +666,11 @@ if ($use_fcm) {
 
 }
 else {
-  printInfo('FCM disabled. Will only send out websocket notifications');
+  printInfo('FCM disabled.');
+}
+
+if ($use_api_push) {
+  printInfo ("Pushes will be sent through APIs and will use $api_push_script");
 }
 
 if ($use_mqtt) {
@@ -1701,7 +1726,7 @@ sub sendOverFCM {
   my $djson = $json;
   $djson =~ s/pass(word)?=(.*?)($|&)/pass$1=xxx$3/g;
 
-  printDebug("Final JSON being sent is: $djson");
+  printDebug("Final JSON being sent is: $djson to token: ...".substr($obj->{token},-6));
   my $req = HTTP::Request->new( 'POST', $uri );
   $req->header(
     'Content-Type'  => 'application/json',
@@ -1842,8 +1867,8 @@ sub processJobs {
           "Job: Update active_event eid:$eid, mid:$mid, type:$type, field:$key to: $val"
         );
         $active_events{$mid}->{$eid}->{$type}->{State} = $val
-          if ( $key == 'State' );
-        if ( $key == 'Cause' ) {
+          if ( $key eq 'State' );
+        if ( $key eq 'Cause' ) {
           my ( $causeTxt, $causeJson ) = split( '--JSON--', $val );
           $active_events{$mid}->{$eid}->{$type}->{Cause} = $causeTxt;
 
@@ -2786,6 +2811,7 @@ sub isAllowedChannel {
   my $event_type = shift;
   my $channel    = shift;
   my $rescode    = shift;
+
   my $retval     = 0;
 
   printDebug("isAllowedChannel: got type:$event_type resCode:$rescode");
@@ -2929,6 +2955,7 @@ sub processNewAlarmsInFork {
   # will contain succ/fail of hook scripts, or 1 (fail) if not invoked
   my $hookResult      = 0;
   my $startHookResult = $hookResult;
+  my $startHookString = '';
 
   my $endProcessed = 0;
 
@@ -2985,6 +3012,9 @@ sub processNewAlarmsInFork {
           }
           printInfo( 'Invoking hook on event start:' . $cmd );
 
+          if ( $cmd =~ /^(.*)$/ ) {
+              $cmd = $1;
+          }
           my $res = `$cmd`;
           chomp($res);
           my ( $resTxt, $resJsonString ) = parseDetectResults($res);
@@ -3016,6 +3046,7 @@ sub processNewAlarmsInFork {
               . '--JSON--'
               . $alarm->{Start}->{resJsonString} . "\n";
 
+
   # This updates the ZM DB with the detected description
   # we are writing resTxt not alarm cause which is only detection text
   # when we write to DB, we will add the latest notes, which may have more zones
@@ -3025,6 +3056,8 @@ sub processNewAlarmsInFork {
               . $eid
               . '--SPLIT--'
               . $resTxt . "\n";
+
+            $startHookString = $resTxt;
           }    # use_hook_desc
 
         }
@@ -3058,6 +3091,42 @@ sub processNewAlarmsInFork {
 
       };
 
+      if ($use_api_push && $api_push_script) {
+        if (isAllowedChannel ('event_start', 'api', $hookResult )  || !$event_start_hook|| !$use_hooks) {
+          printInfo ('Sending push over API as it is allowed for event_start');
+     
+          my $api_cmd = $api_push_script. ' '
+              . $eid. ' ' 
+              . $mid. ' '
+              . ' "'.$temp_alarm_obj->{Name} . '" '
+              . ' "'.$temp_alarm_obj->{Cause} . '" '
+              . " event_start";
+
+          if ($hook_pass_image_path) {
+              my $event = new ZoneMinder::Event($eid);
+              $api_cmd = $api_cmd . ' "' . $event->Path() . '"';
+              printDebug( 'Adding event path:'
+                  . $event->Path()
+                  . ' to api_cmd for image location' );
+
+          }
+          
+          
+          printInfo ("Executing API script command for event_start $api_cmd");
+          if ( $api_cmd =~ /^(.*)$/ ) {
+            $api_cmd = $1;
+          }
+          my $api_res = `$api_cmd`;
+          printInfo ("Returned from $api_cmd");
+          chomp($api_res);
+          my $api_retcode = $? >> 8;
+          printDebug ("API push script returned : $api_retcode"); 
+
+        } else {
+          printInfo ('Not sending push over API as it is not allowed for event_start');
+        }
+
+      } 
       printInfo('Matching alarm to connection rules...');
       my ($serv) = @_;
       foreach (@active_connections) {
@@ -3085,6 +3154,17 @@ sub processNewAlarmsInFork {
       }
       else {    # start processing over, so end can be processed
 
+        my $notes = getNotesFromEventDB($eid);
+        if ($startHookString) {
+          if (index($notes, 'detected:') == -1) {
+            printDebug ("ZM overwrote detection, adding detection notes back into DB [$startHookString]");
+            $notes = $startHookString . " ".$notes;
+            updateEventinZmDB ($eid, $notes);
+          } else {
+            printDebug ("DB Event notes contain detection text, all good");
+          }
+        }
+
         if ( $event_end_hook && $use_hooks ) {
 
           # invoke end hook script
@@ -3093,7 +3173,7 @@ sub processNewAlarmsInFork {
             . $eid . ' '
             . $mid . ' "'
             . $alarm->{MonitorName} . '" "'
-            . getNotesFromEventDB($eid) . '"';
+            . $notes . '"';
 
           if ($hook_pass_image_path) {
             my $event = new ZoneMinder::Event($eid);
@@ -3104,6 +3184,9 @@ sub processNewAlarmsInFork {
 
           }
           printInfo( 'Invoking hook on event end:' . $cmd );
+          if ( $cmd =~ /^(.*)$/ ) {
+              $cmd = $1;
+          }
           my $res = `$cmd`;
           chomp($res);
           my ( $resTxt, $resJsonString ) = parseDetectResults($res);
@@ -3116,10 +3199,12 @@ sub processNewAlarmsInFork {
 
           #tbd  - was this a typo? Why ->{Cause}?
           # kept it here for now
-          $alarm->{Cause} = $resTxt . ' ' . $alarm->{Cause};
-
+          #$alarm->{Cause} = $resTxt . ' ' . $alarm->{Cause};
+          $alarm->{End}->{Cause}         = $resTxt;
           #I think this is what we need
-          $alarm->{End}->{Cause}         = $resTxt . ' ' . $alarm->{Cause};
+
+          #$alarm->{End}->{Cause}         = $resTxt . ' ' . $alarm->{Cause};
+          $alarm->{End}->{Cause}         = $resTxt;
           $alarm->{End}->{DetectionJson} = decode_json($resJsonString);
 
         }
@@ -3147,9 +3232,6 @@ sub processNewAlarmsInFork {
         );
       }
       else {
-        # end will never be ready before start is ready
-        # this means we need to notify
-        printInfo('Matching alarm to connection rules...');
 
         my $cause          = $alarm->{End}->{Cause};
         my $detectJson     = $alarm->{End}->{DetectionJson} || [];
@@ -3160,6 +3242,54 @@ sub processNewAlarmsInFork {
           Cause         => $cause,
           DetectionJson => $detectJson
         };
+
+        if ($use_api_push && $api_push_script) {
+
+          if ($send_event_end_notification) {
+
+            if (isAllowedChannel ('event_start', 'api', $hookResult ) || !$event_end_hook || !$use_hooks) {
+            printInfo ('Sending push over API as it is allowed for event_end');
+
+            my $api_cmd = $api_push_script. ' '
+                . $eid. ' ' 
+                . $mid. ' '
+                . ' "'.$temp_alarm_obj->{Name} . '" '
+                . ' "'.$temp_alarm_obj->{Cause} . '" '
+                . " event_end";
+
+            if ($hook_pass_image_path) {
+              my $event = new ZoneMinder::Event($eid);
+              $api_cmd = $api_cmd . ' "' . $event->Path() . '"';
+              printDebug( 'Adding event path:'
+                  . $event->Path()
+                  . ' to api_cmd for image location' );
+
+            }
+        
+            printInfo ("Executing API script command for event_end $api_cmd");
+
+            if ( $api_cmd =~ /^(.*)$/ ) {
+              $api_cmd = $1;
+            }
+            my $res = `$api_cmd`;
+            printDebug ("returned from api cmd for event_end");
+            chomp($res);
+            my $retcode = $? >> 8;
+            printDebug ("API push script returned : $retcode"); 
+
+          } else {
+            printInfo ('Not sending push over API as it is not allowed for event_start');
+          }
+
+          } else {
+            printDebug ('Not sending event_end push over API as send_event_end_notification is no');
+          }
+          
+
+      } 
+        # end will never be ready before start is ready
+        # this means we need to notify
+        printInfo('Matching alarm to connection rules...');
 
         my ($serv) = @_;
         foreach (@active_connections) {
@@ -3211,6 +3341,9 @@ sub processNewAlarmsInFork {
     }
     sleep(2);
   }
+
+  
+  
   printDebug('exiting');
   print WRITER 'active_event_delete--TYPE--' . $mid . '--SPLIT--' . $eid . "\n";
   close(WRITER);
@@ -3264,7 +3397,7 @@ sub initSocketServer {
   else {
     printInfo('Secure WS is disabled...');
   }
-  printInfo( 'Web Socket Event Server listening on port ' . $port . '\n' );
+  printInfo( 'Web Socket Event Server listening on port ' . $port );
 
   $wss = Net::WebSocket::Server->new(
     listen => $ssl_enabled ? $ssl_server : $port,
@@ -3311,8 +3444,8 @@ sub initSocketServer {
         elsif ( $pid == 0 ) {
 
           # do this to get a proper return value
-          $SIG{CHLD} = undef;
-
+         # $SIG{CHLD} = undef;
+          local $SIG{'CHLD'} = 'DEFAULT';
           #$wss->shutdown();
           close(READER);
           $dbh = zmDbConnect(1);
