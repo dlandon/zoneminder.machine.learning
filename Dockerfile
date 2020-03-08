@@ -75,7 +75,9 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf && \
 	echo "#!/bin/sh\n\n/usr/bin/zmaudit.pl -f" >> /etc/cron.weekly/zmaudit && \
-	chmod +x /etc/cron.weekly/zmaudit
+	chmod +x /etc/cron.weekly/zmaudit && \
+	cp /etc/apache2/ports.conf /etc/apache2/ports.conf.default && \
+	cp /etc/apache2/sites-enabled/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf.default
 
 RUN	apt-get -y remove make && \
 	apt-get -y clean && \

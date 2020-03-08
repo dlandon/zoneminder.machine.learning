@@ -40,6 +40,8 @@ docker run -d --name="Zoneminder" \
 -e INSTALL_FACE="0" \
 -e INSTALL_TINY_YOLO="0" \
 -e INSTALL_YOLO="0" \
+-e MULTI_PORT_START="0" \
+-e MULTI_PORT_END="0" \
 -v "/mnt/Zoneminder":"/config":rw \
 -v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
 dlandon/zoneminder
@@ -60,6 +62,7 @@ You can start/stop/restart the container anytime. You don't need to run the comm
 - Set `INSTALL_FACE="1"` to install face recognition packages.  The initial installation can take a long time.
 - Set `INSTALL_TINY_YOLO="1"` to install the tiny yolo hook processing files.
 - Set `INSTALL_YOLO="1"` to install the yolo hook processing files.
+- Set `MULTI_PORT_START` and `MULTI_PORT_END` to define a port range for ES multi-port operation.
 - The command above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data/event files/etc are kept here. You can change this to any directory in your host path that you want to.
 
 #### Adding Nvidia GPU support to the Zoneminder.
@@ -89,6 +92,9 @@ To access the Zoneminder gui, browse to: `https://<your host ip>:8443/zm`
 The zmNinja Event Notification Server is accessed at port `9000`.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
 
 #### Change Log
+
+2020-03-08
+- Add multi-port ES capablity to adjust apache2 for multi-port operation.
 
 2020-02-29
 - Fix docker failure when it can't update.
