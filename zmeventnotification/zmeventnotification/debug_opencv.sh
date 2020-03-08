@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #
-# Script to compile opencv with CUDA support.
+# Script to debug opencv compile with CUDA support.
 #
 
 zip opencv *.log opencv.sh
