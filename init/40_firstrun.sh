@@ -96,6 +96,11 @@ else
 	echo "Event notification server already moved"
 fi
 
+# Show version of ES
+if [ -f /usr/bin/zmeventnotification.pl ]; then
+	echo "Event Server version: `cat /usr/bin/zmeventnotification.pl | grep Docker | awk '{print $4}' | sed 's/;//'`."
+fi
+
 # Move ssmtp configuration if it doesn't exist
 if [ ! -d /config/ssmtp ]; then
 	echo "Moving ssmtp to config folder"
