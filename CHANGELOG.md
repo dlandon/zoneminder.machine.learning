@@ -1,12 +1,12 @@
 # Change Log
 
-##2020-03-08
+## 2020-03-08
 - Add multi-port ES capablity to adjust apache2 for multi-port operation.
 
-##2020-02-29
+## 2020-02-29
 - Fix docker failure when it can't update.
 
-2020-02-23
+## 2020-02-23
 - Fix reboot apt update of cuda failing again.
 - Set up unattended re-compile of opencv when docker updates.
 - More opencv script changes.
