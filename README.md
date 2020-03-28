@@ -65,6 +65,14 @@ You can start/stop/restart the container anytime. You don't need to run the comm
 - Set `MULTI_PORT_START` and `MULTI_PORT_END` to define a port range for ES multi-port operation.
 - The command above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data/event files/etc are kept here. You can change this to any directory in your host path that you want to.
 
+#### User Script
+
+You can enable a custom user script that will run every time the container is started.
+
+Put your script in the /mnt/Zoneminder/ folder and name it userscript.sh.  The script will be executed each time the Docker is started before Zoneminder is started.  Be sure to chmod +x userscript.sh so the script is executable. 
+
+- Set `ADVANCED_SCRIPT="1"` environment variable to enable your script
+
 #### Adding Nvidia GPU support to the Zoneminder.
 
 You will have to install support for your graphics card.  If you are using Unraid, install the Nvidia plugin and follow these [instructions](https://forums.unraid.net/topic/77813-plugin-linuxserverio-unraid-nvidia/?tab=comments#comment-719665).  On other systems install the Nvidia Docker, see [here](https://medium.com/@adityathiruvengadam/cuda-docker-%EF%B8%8F-for-deep-learning-cab7c2be67f9).
