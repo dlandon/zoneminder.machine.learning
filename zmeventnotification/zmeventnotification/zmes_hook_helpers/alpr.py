@@ -12,7 +12,7 @@ import subprocess
 class AlprBase:
     def __init__(self, url=None, apikey=None, tempdir='/tmp'):
         if not apikey:
-            raise ValueError('Invalid or missing API key passed')
+            g.logger.debug ('No API key specified, hopefully you do not need one')
         self.apikey = apikey
         self.tempdir = tempdir
         self.url = url
@@ -36,9 +36,11 @@ class AlprBase:
             cv2.imwrite(filename, object)
             self.remove_temp = True
         else:
-            g.logger.debug('supplied object is a file')
+            g.logger.debug(f'supplied object is a file {object}')
             self.filename = object
+           
             self.remove_temp = False
+  
 
     def getscale(self):
         if g.config['resize'] != 'no':
@@ -74,10 +76,18 @@ class PlateRecognizer(AlprBase):
         self.options = options
 
     def stats(self):
+        if g.config['alpr_api_type'] != 'cloud':
+            g.logger.debug ('local SDK does not provide stats')
+            return {}
         try:
+            if self.apikey:
+                 headers={'Authorization': 'Token ' + self.apikey}
+            else:
+                headers={}
             response = requests.get(
                 self.url + '/statistics/',
-                headers={'Authorization': 'Token ' + self.apikey})
+               headers=headers)
+            response.raise_for_status()
         except requests.exceptions.RequestException as e:
             response = {'error': str(e)}
         else:
@@ -95,20 +105,25 @@ class PlateRecognizer(AlprBase):
                 json.dumps(self.stats())))
         with open(self.filename, 'rb') as fp:
             try:
+                platerec_url = self.url
+                if g.config['alpr_api_type'] == 'cloud':
+                    platerec_url += '/plate-reader'
                 payload = self.options.get('regions')
                 response = requests.post(
-                    self.url + '/plate-reader/',
+                   platerec_url,
+                    #self.url ,
                     files=dict(upload=fp),
                     data=payload,
                     headers={'Authorization': 'Token ' + self.apikey})
+                response.raise_for_status()
             except requests.exceptions.RequestException as e:
                 response = {
                     'error':
-                    'Plate recognizer rejected the upload. You either have a bad API key or a bad image',
+                    f'Plate recognizer rejected the upload with: {e}.',
                     'results': []
                 }
-                g.logger.debug(
-                    'Plate recognizer rejected the upload. You either have a bad API key or a bad image'
+                g.logger.error(
+                    f'Plate recognizer rejected the upload with {e}'
                 )
             else:
                 response = response.json()
@@ -119,24 +134,27 @@ class PlateRecognizer(AlprBase):
         if self.remove_temp:
             os.remove(filename)
 
-        for plates in response['results']:
-            label = plates['plate']
-            dscore = plates['dscore']
-            score = plates['score']
-            if dscore >= options.get('min_dscore') and score >= options.get(
-                    'min_score'):
-                x1 = round(int(plates['box']['xmin']) * xfactor)
-                y1 = round(int(plates['box']['ymin']) * yfactor)
-                x2 = round(int(plates['box']['xmax']) * xfactor)
-                y2 = round(int(plates['box']['ymax']) * yfactor)
-                labels.append(label)
-                bbox.append([x1, y1, x2, y2])
-                confs.append(plates['score'])
-            else:
-                g.logger.debug(
-                    'ALPR: discarding plate:{} because its dscore:{}/score:{} are not in range of configured dscore:{} score:{}'
-                    .format(label, dscore, score, options.get('min_dscore'),
-                            options.get('min_score')))
+        if response.get('results'):
+            for plates in response.get('results'):
+                label = plates['plate']
+                dscore = plates['dscore']
+                score = plates['score']
+                if dscore >= options.get('min_dscore') and score >= options.get(
+                        'min_score'):
+                    x1 = round(int(plates['box']['xmin']) * xfactor)
+                    y1 = round(int(plates['box']['ymin']) * yfactor)
+                    x2 = round(int(plates['box']['xmax']) * xfactor)
+                    y2 = round(int(plates['box']['ymax']) * yfactor)
+                    labels.append(label)
+                    bbox.append([x1, y1, x2, y2])
+                    confs.append(plates['score'])
+                else:
+                    g.logger.debug(
+                        'ALPR: discarding plate:{} because its dscore:{}/score:{} are not in range of configured dscore:{} score:{}'
+                        .format(label, dscore, score, options.get('min_dscore'),
+                                options.get('min_score')))
+
+        g.logger.debug ('Exiting ALPR with labels:{}'.format(labels))
         return (bbox, labels, confs)
 
 
@@ -148,7 +166,7 @@ class OpenAlpr(AlprBase):
             self.url = 'https://api.openalpr.com/v2/recognize'
 
         g.logger.debug(
-            'PlateRecognizer ALPR initialized with options {} and url: {}'.
+            'Open ALPR initialized with options {} and url: {}'.
             format(options, self.url))
         self.options = options
 
@@ -158,6 +176,7 @@ class OpenAlpr(AlprBase):
         confs = []
 
         self.prepare(object)
+     
         with open(self.filename, 'rb') as fp:
             try:
                 options = self.options

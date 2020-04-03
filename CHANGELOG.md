@@ -1,5 +1,8 @@
 ## Change Log
 
+### 2020-04-03
+- Update zmNinja Event Notification Server to version 5.11.3.
+
 ### 2020-03-08
 - Add multi-port ES capablity to adjust apache2 for multi-port operation.
 
