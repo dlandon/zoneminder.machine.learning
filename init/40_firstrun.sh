@@ -177,23 +177,19 @@ usermod -a -G mail www-data
 chown -R mysql:mysql /config/mysql
 chown -R mysql:mysql /var/lib/mysql
 chown -R $PUID:$PGID /config/conf
-chmod 777 /config/conf
-chmod 666 /config/conf/*
+chmod -R 666 /config/conf
 chown -R $PUID:$PGID /config/control
-chmod 777 /config/control
-chmod 666 /config/control/*
+chmod -R 666 /config/control
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 777 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.*
-chmod 666 /config/zmeventnotification.*
+chmod -R 666 /config/zmeventnotification.*
 chown -R $PUID:$PGID /config/secrets.ini
-chmod 666 /config/secrets.ini
+chmod -R 666 /config/secrets.ini
 chown -R $PUID:$PGID /config/opencv
-chmod 777 /config/opencv
-chmod 666 /config/opencv/*
+chmod -R 666 /config/opencv
 chown -R $PUID:$PGID /config/keys
-chmod 777 /config/keys
-chmod 666 /config/keys/*
+chmod -R 777 /config/keys
 chown -R www-data:www-data /config/push/
 chown -R www-data:www-data /var/lib/zmeventnotification/
 chmod +x /config/opencv/opencv.sh
