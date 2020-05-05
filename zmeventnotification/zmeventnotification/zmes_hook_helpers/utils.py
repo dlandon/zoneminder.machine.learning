@@ -12,6 +12,7 @@ import json
 import time
 import re
 import ast
+import urllib.parse
 
 from configparser import ConfigParser
 import zmes_hook_helpers.common_params as g
@@ -33,7 +34,7 @@ def rescale_polygons(xfactor, yfactor):
             newp.append((newx, newy))
         newps.append({'name': p['name'], 'value': newp})
     g.logger.debug('resized polygons x={}/y={}: {}'.format(
-        xfactor, yfactor, newps))
+        xfactor, yfactor, newps),level=2)
     g.polygons = newps
 
 
@@ -56,9 +57,9 @@ def str_split(my_str):
 # Imports zone definitions from ZM
 def import_zm_zones(mid):
     url = g.config['portal'] + '/api/zones/forMonitor/' + mid + '.json'
-    g.logger.debug('Getting ZM zones using {}?user=xxx&pass=yyy'.format(url))
+    g.logger.debug('Getting ZM zones using {}?user=xxx&pass=yyy'.format(url),level=2)
     url = url + '?user=' + g.config['user']
-    url = url + '&pass=' + g.config['password']
+    url = url + '&pass=' + urllib.parse.quote(g.config['password'], safe='')
 
     if g.config['portal'].lower().startswith('https://'):
         main_handler = urllib.request.HTTPSHandler(context=g.ctx)
@@ -66,7 +67,7 @@ def import_zm_zones(mid):
         main_handler = urllib.request.HTTPHandler()
 
     if g.config['basic_user']:
-        g.logger.debug('Basic auth config found, associating handlers')
+        g.logger.debug('Basic auth config found, associating handlers',level=2)
         password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         top_level_url = g.config['portal']
         password_mgr.add_password(None, top_level_url, g.config['basic_user'],
@@ -100,13 +101,14 @@ def download_files(args):
             g.config['wait']))
         time.sleep(g.config['wait'])
 
+    
     if g.config['portal'].lower().startswith('https://'):
         main_handler = urllib.request.HTTPSHandler(context=g.ctx)
     else:
         main_handler = urllib.request.HTTPHandler()
 
     if g.config['basic_user']:
-        g.logger.debug('Basic auth config found, associating handlers')
+        g.logger.debug('Basic auth config found, associating handlers',level=2)
         password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         top_level_url = g.config['portal']
         password_mgr.add_password(None, top_level_url, g.config['basic_user'],
@@ -119,19 +121,19 @@ def download_files(args):
 
     if g.config['frame_id'] == 'bestmatch':
         # download both alarm and snapshot
-        filename1 = g.config['image_path'] + '/' + args[
-            'eventid'] + '-alarm.jpg'
-        filename1_bbox = g.config['image_path'] + '/' + args[
-            'eventid'] + '-alarm-bbox.jpg'
-        filename2 = g.config['image_path'] + '/' + args[
-            'eventid'] + '-snapshot.jpg'
-        filename2_bbox = g.config['image_path'] + '/' + args[
-            'eventid'] + '-snapshot-bbox.jpg'
+        filename1 = g.config['image_path'] + '/' + args.get(
+            'eventid') + '-alarm.jpg'
+        filename1_bbox = g.config['image_path'] + '/' + args.get(
+            'eventid') + '-alarm-bbox.jpg'
+        filename2 = g.config['image_path'] + '/' + args.get(
+            'eventid') + '-snapshot.jpg'
+        filename2_bbox = g.config['image_path'] + '/' + args.get(
+            'eventid') + '-snapshot-bbox.jpg'
 
-        url = g.config['portal'] + '/index.php?view=image&eid=' + args[
-            'eventid'] + '&fid=alarm'
-        durl = g.config['portal'] + '/index.php?view=image&eid=' + args[
-            'eventid'] + '&fid=alarm'
+        url = g.config['portal'] + '/index.php?view=image&eid=' + args.get(
+            'eventid')+ '&fid=alarm'
+        durl = g.config['portal'] + '/index.php?view=image&eid=' + args.get(
+            'eventid') + '&fid=alarm'
         if g.config['user']:
             url = url + '&username=' + g.config[
                 'user'] + '&password=' + urllib.parse.quote(
@@ -147,10 +149,10 @@ def download_files(args):
         with open(filename1, 'wb') as output_file:
             output_file.write(input_file.read())
 
-        url = g.config['portal'] + '/index.php?view=image&eid=' + args[
-            'eventid'] + '&fid=snapshot'
-        durl = g.config['portal'] + '/index.php?view=image&eid=' + args[
-            'eventid'] + '&fid=snapshot'
+        url = g.config['portal'] + '/index.php?view=image&eid=' + args.get(
+            'eventid') + '&fid=snapshot'
+        durl = g.config['portal'] + '/index.php?view=image&eid=' + args.get(
+            'eventid') + '&fid=snapshot'
         if g.config['user']:
             url = url + '&username=' + g.config[
                 'user'] + '&password=' + urllib.parse.quote(
@@ -167,16 +169,16 @@ def download_files(args):
 
     else:
         # only download one
-        filename1 = g.config['image_path'] + '/' + args['eventid'] + '.jpg'
-        filename1_bbox = g.config['image_path'] + '/' + args[
-            'eventid'] + '-bbox.jpg'
+        filename1 = g.config['image_path'] + '/' + args.get('eventid') + '.jpg'
+        filename1_bbox = g.config['image_path'] + '/' + args.get(
+            'eventid') + '-bbox.jpg'
         filename2 = None
         filename2_bbox = None
 
-        url = g.config['portal'] + '/index.php?view=image&eid=' + args[
-            'eventid'] + '&fid=' + g.config['frame_id']
-        durl = g.config['portal'] + '/index.php?view=image&eid=' + args[
-            'eventid'] + '&fid=' + g.config['frame_id']
+        url = g.config['portal'] + '/index.php?view=image&eid=' + args.get(
+            'eventid') + '&fid=' + g.config['frame_id']
+        durl = g.config['portal'] + '/index.php?view=image&eid=' + args.get(
+            'eventid') + '&fid=' + g.config['frame_id']
         if g.config['user']:
             url = url + '&username=' + g.config[
                 'user'] + '&password=' + urllib.parse.quote(
@@ -192,7 +194,7 @@ def download_files(args):
 def get_pyzm_config(args):
     g.config['pyzm_overrides'] = {}
     config_file = ConfigParser(interpolation=None)
-    config_file.read(args['config'])
+    config_file.read(args.get('config'))
     if config_file.has_option('general', 'pyzm_overrides'):
         pyzm_overrides = config_file.get('general', 'pyzm_overrides')
         g.config['pyzm_overrides'] =  ast.literal_eval(pyzm_overrides) if pyzm_overrides else {}     
@@ -233,7 +235,7 @@ def process_config(args, ctx):
                 .format(v['section'], k, val))
 
         if val and val[0] == '!':  # its a secret token, so replace
-            g.logger.debug('Secret token found in config: {}'.format(val))
+            g.logger.debug('Secret token found in config: {}'.format(val),level=2)
             if not has_secrets:
                 raise ValueError(
                     'Secret token found, but no secret file specified')
@@ -256,7 +258,7 @@ def process_config(args, ctx):
     # main
     try:
         config_file = ConfigParser(interpolation=None)
-        config_file.read(args['config'])
+        config_file.read(args.get('config'))
 
         if config_file.has_option('general', 'secrets'):
             secrets_filename = config_file.get('general', 'secrets')
@@ -291,8 +293,8 @@ def process_config(args, ctx):
 
         # Check if we have a custom overrides for this monitor
 
-        if 'monitorid' in args and args['monitorid']:
-            sec = 'monitor-{}'.format(args['monitorid'])
+        if 'monitorid' in args and args.get('monitorid'):
+            sec = 'monitor-{}'.format(args.get('monitorid'))
             if sec in config_file:
                 # we have a specific section for this monitor
                 for item in config_file[sec].items():
@@ -302,25 +304,25 @@ def process_config(args, ctx):
                         # This means its a legit config key that needs to be overriden
                         g.logger.debug(
                             '[{}] overrides key:{} with value:{}'.format(
-                                sec, k, v))
+                                sec, k, v),level=2)
                         g.config[k] = _correct_type(v,
                                                     g.config_vals[k]['type'])
                     else:
                         # This means its a polygon for the monitor
                         g.polygons.append({'name': k, 'value': str2tuple(v)})
-                        g.logger.debug('adding polygon: {} [{}]'.format(k, v))
+                        g.logger.debug('adding polygon: {} [{}]'.format(k, v),level=2)
 
             # now import zones if needed
             # this should be done irrespective of a monitor section
             if g.config['import_zm_zones'] == 'yes':
-                import_zm_zones(args['monitorid'])
+                import_zm_zones(args.get('monitorid'))
 
         else:
             g.logger.info(
                 'Ignoring monitor specific settings, as you did not provide a monitor id'
             )
     except Exception as e:
-        g.logger.error('Error parsing config:{}'.format(args['config']))
+        g.logger.error('Error parsing config:{}'.format(args.get('config')))
         g.logger.error('Error was:{}'.format(e))
         exit(0)
 
@@ -338,4 +340,18 @@ def process_config(args, ctx):
                 g.config[gk] = g.config[gk].replace('{{' + sub_var + '}}',
                                                     g.config[sub_var])
                 g.logger.debug('key [{}] is \'{}\' after substitution'.format(
-                    gk, g.config[gk]))
+                    gk, g.config[gk]),level=2)
+
+    # Now munge config if testing args provide
+    if args.get('file'):
+        g.config['wait'] = 0
+        g.config['write_image_to_zm'] = 'no'
+        g.polygons = []
+       
+        
+    if  args.get('output_path'):
+        g.logger.debug ('Output path modified to {}'.format(args.get('output_path')))
+        g.config['image_path'] = args.get('output_path')
+        g.config['write_debug_image'] = 'yes'
+    
+   

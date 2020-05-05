@@ -5,7 +5,8 @@
 
 from __future__ import division
 import sys
-import cv2
+#lets do this _after_ log init so we log it
+#import cv2
 import argparse
 import datetime
 import os
@@ -18,17 +19,13 @@ import json
 import time
 import requests
 import subprocess
-#import hashlib
-
-import zmes_hook_helpers.log as log
-import zmes_hook_helpers.utils as utils
-import zmes_hook_helpers.image_manip as img
-import zmes_hook_helpers.common_params as g
-
 import traceback
 
-
-import zmes_hook_helpers.alpr as alpr
+# Modules that load cv2 will go later 
+# so we can log misses
+import zmes_hook_helpers.log as log
+import zmes_hook_helpers.utils as utils
+import zmes_hook_helpers.common_params as g
 from zmes_hook_helpers.__init__ import __version__
 
 auth_header = None
@@ -52,7 +49,7 @@ def remote_detect(image, model=None):
 
     data_file = g.config['base_data_path'] + '/zm_login.json'
     if os.path.exists(data_file):
-        g.logger.debug('Found token file, checking if token has not expired')
+        g.logger.debug('Found token file, checking if token has not expired', level=2)
         with open(data_file) as json_file:
             data = json.load(json_file)
         generated = data['time']
@@ -82,7 +79,7 @@ def remote_detect(image, model=None):
         if not access_token:
             raise ValueError('Error getting remote API token {}'.format(data))
             return
-        g.logger.debug('Writing new token for future use')
+        g.logger.debug('Writing new token for future use',level=2)
         with open(data_file, 'w') as json_file:
             wdata = {
                 'token': access_token,
@@ -139,6 +136,9 @@ ap.add_argument('-v',
                 help='print version and quit',
                 action='store_true')
 
+ap.add_argument('-o', '--output-path',
+                help='internal testing use only - path for debug images to be written')
+
 ap.add_argument('-f',
                 '--file',
                 help='internal testing use only - skips event download')
@@ -146,15 +146,19 @@ ap.add_argument('-f',
 args, u = ap.parse_known_args()
 args = vars(args)
 
-if not args['config'] or not args['eventid']:
-    print ('--config and --eventid are required')
+if not args.get('config'):
+    print ('--config required')
+    exit(1)
+
+if not args.get('file')and not args.get('eventid'):
+    print ('--eventid required')
     exit(1)
 
 utils.get_pyzm_config(args)
 
 
-if args['monitorid']:
-    log.init(process_name='zmesdetect_' + 'm' + args['monitorid'], override=g.config['pyzm_overrides'])
+if args.get('monitorid'):
+    log.init(process_name='zmesdetect_' + 'm' + args.get('monitorid'), override=g.config['pyzm_overrides'])
 else:
     log.init(process_name='zmesdetect',override=g.config['pyzm_overrides'])
 
@@ -164,13 +168,26 @@ try:
 except:
     pass
 
-g.logger.info('---------| hook version: {}, ES version: {} |------------'.format(__version__, es_version))
-if args['version']:
+
+try:
+    import cv2
+except ImportError as e:
+    g.logger.fatal (f'{e}: You might not have installed OpenCV as per install instructions. Remember, it is NOT automatically installed')
+
+g.logger.info('---------| hook version: {}, ES version: {} , OpenCV version: {}|------------'.format(__version__, es_version, cv2.__version__))
+if args.get('version'):
     print(__version__)
     exit(0)
 
 
 
+# load modules that depend on cv2
+try:
+    import zmes_hook_helpers.image_manip as img
+    import zmes_hook_helpers.alpr as alpr
+except Exception as e:
+    g.logger.error (f'{e}')
+    exit(1)
 g.polygons = []
 
 # process config file
@@ -195,16 +212,20 @@ else:
 
 # now download image(s)
 
-if not args['file']:
-    filename1, filename2, filename1_bbox, filename2_bbox = utils.download_files(
-        args)
-
+if not args.get('file'):
+    try:
+        filename1, filename2, filename1_bbox, filename2_bbox = utils.download_files(
+            args)
+    except Exception as e:
+        g.logger.error(f'Error downloading files: {e}')
+        g.logger.fatal('animation: Traceback:{}'.format(traceback.format_exc()))
+    
     # filename_alarm will be the first frame to analyze (typically alarm)
     # filename_snapshot will be the second frame to analyze only if the first fails (typically snapshot)
 else:
-    g.logger.debug('TESTING ONLY: reading image from {}'.format(args['file']))
-    filename1 = args['file']
-    filename1_bbox = append_suffix(filename1, '-bbox')
+    g.logger.debug('TESTING ONLY: reading image from {}'.format(args.get('file')))
+    filename1 = args.get('file')
+    filename1_bbox = g.config['image_path']+'/'+append_suffix(filename1, '-bbox')
     filename2 = None
     filename2_bbox = None
 
@@ -398,7 +419,7 @@ for model in g.config['models']:
                     with open(data_file) as json_file:
                         data = json.load(json_file)
                         g.logger.debug('Read from existing names: {}'.format(
-                            data['names']))
+                            data['names']),level=2)
                         m.set_classes(data['names'])
                 else:
                     g.logger.debug('Fetching known names from remote gateway')
@@ -480,9 +501,9 @@ for model in g.config['models']:
                         })
                     # Now add plate objects
                     for i, al in enumerate(alpr_l):
-                        g.logger.info(
+                        g.logger.debug(
                             'ALPR Found {} at {} with score:{}'.format(
-                                al, alpr_b[i], alpr_c[i]))
+                                al, alpr_b[i], alpr_c[i]),level=2)
                         b.append(alpr_b[i])
                         l.append(al)
                         c.append(alpr_c[i])
@@ -513,7 +534,7 @@ for model in g.config['models']:
                         'We did not find license plates, and there are no more images to try'
                     )
                     if saved_bbox:
-                        g.logger.debug('Going back to matches in first image')
+                        g.logger.debug('Going back to matches in first image',level=2)
                         b = saved_bbox
                         l = saved_labels
                         c = saved_conf
@@ -574,7 +595,7 @@ for model in g.config['models']:
                         })
         else:  # usealpr
             g.logger.debug(
-                'ALPR not in use, no need for look aheads in processing')
+                'ALPR not in use, no need for look aheads in processing',level=2)
             # store objects
             otype = 'face' if model == 'face' else 'object'
             for idx, t_l in enumerate(l):
@@ -594,12 +615,12 @@ for model in g.config['models']:
                 g.logger.info('labels found: {}'.format(l))
                 g.logger.debug(
                     'match found in {}, breaking file loop...'.format(
-                        filename))
+                        filename), level=2)
                 matched_file = filename
                 break  # if we found a match, no need to process the next file
             else:
                 g.logger.debug(
-                    'Going to try next image before we decide the best one to use'
+                    'Going to try next image before we decide the best one to use',level=2
                 )
         else:
             g.logger.debug('No match found in {} using model:{}'.format(
@@ -608,7 +629,7 @@ for model in g.config['models']:
     # model loop
     if matched_file and g.config['detection_mode'] == 'first':
         g.logger.debug(
-            'detection mode is set to first, breaking out of model loop...')
+            'detection mode is set to first, breaking out of model loop...',level=2)
         break
 
 # all models loops, all files looped
@@ -653,17 +674,17 @@ else:
 
     
 
-    if g.config['match_past_detections'] == 'yes' and args['monitorid']:
+    if g.config['match_past_detections'] == 'yes' and args.get('monitorid'):
         # point detections to post processed data set
         g.logger.info('Removing matches to past detections')
         bbox_t, label_t, conf_t = img.processPastDetection(
-            bbox, label, conf, args['monitorid'])
+            bbox, label, conf, args.get('monitorid'))
         # save current objects for future comparisons
         g.logger.debug(
             'Saving detections for monitor {} for future match'.format(
-                args['monitorid']))
-        mon_file = g.config['image_path'] + '/monitor-' + args[
-            'monitorid'] + '-data.pkl'
+                args.get('monitorid')))
+        mon_file = g.config['image_path'] + '/monitor-' + args.get(
+            'monitorid') + '-data.pkl'
         f = open(mon_file, "wb")
         pickle.dump(bbox, f)
         pickle.dump(label, f)
@@ -674,11 +695,11 @@ else:
     
     # Do this after match past detections so we don't create an objdetect if images were discarded
     if g.config['write_image_to_zm'] == 'yes':
-        if (args['eventpath'] and len(bbox)):
+        if (args.get('eventpath') and len(bbox)):
             g.logger.debug('Writing detected image to {}/objdetect.jpg'.format(
-                args['eventpath']))
-            cv2.imwrite(args['eventpath'] + '/objdetect.jpg', image)
-            jf = args['eventpath'] + '/objects.json'
+                args.get('eventpath')))
+            cv2.imwrite(args.get('eventpath') + '/objdetect.jpg', image)
+            jf = args.get('eventpath')+ '/objects.json'
             final_json = {'frame': frame_type, 'detections': obj_json}
             g.logger.debug('Writing JSON output to {}'.format(jf))
             try:
@@ -691,7 +712,7 @@ else:
             if g.config['create_animation'] == 'yes':
                 g.logger.debug('animation: Creating burst...')
                 try:
-                    img.createAnimation(frame_type, args['eventid'],args['eventpath']+'/objdetect', g.config['animation_types'])
+                    img.createAnimation(frame_type, args.get('eventid'),args.get('eventpath')+'/objdetect', g.config['animation_types'])
                 except Exception as e:
                     g.logger.error('Error creating animation:{}'.format(e))
                     g.logger.error('animation: Traceback:{}'.format(traceback.format_exc()))
@@ -708,16 +729,17 @@ else:
     pred = ''
     detections = []
     seen = {}
-
+    
     if not obj_json:
         # if we broke out early/first match
         otype = 'face' if model == 'face' else 'object'
         for idx, t_l in enumerate(label):
+            #print (idx, t_l)
             obj_json.append({
                 'type': otype,
                 'label': t_l,
                 'box': bbox[idx],
-                'confidence': "{:.2f}%".format(c[idx] * 100)
+                'confidence': "{:.2f}%".format(conf[idx] * 100)
             })
 
     #g.logger.debug ('CONFIDENCE ARRAY:{}'.format(conf))
@@ -736,7 +758,6 @@ else:
        # g.logger.error (f"Returning THIS IS {obj_json}")
         jos = json.dumps(obj_json)
         g.logger.debug('Prediction string JSON:{}'.format(jos))
-
         print(pred + '--SPLIT--' + jos)
 
     # end of matched_file

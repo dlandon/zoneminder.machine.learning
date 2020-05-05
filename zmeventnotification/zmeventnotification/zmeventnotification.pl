@@ -64,7 +64,7 @@ if ( !try_use('JSON') ) {
 #
 # ==========================================================================
 
-my $app_version = '5.11-Docker';
+my $app_version = '5.13-Docker';
 
 # ==========================================================================
 #
@@ -87,6 +87,7 @@ use constant {
   DEFAULT_MQTT_ENABLE        => 'no',
   DEFAULT_MQTT_SERVER        => '127.0.0.1',
   DEFAULT_MQTT_TICK_INTERVAL => 15,
+  DEFAULT_MQTT_RETAIN        => 'no',
   DEFAULT_FCM_TOKEN_FILE     => '/var/lib/zmeventnotification/push/tokens.txt',
 
   DEFAULT_USE_API_PUSH => 'no',
@@ -95,6 +96,7 @@ use constant {
   DEFAULT_SSL_ENABLE                        => 'yes',
   DEFAULT_CUSTOMIZE_VERBOSE                 => 'no',
   DEFAULT_CUSTOMIZE_EVENT_CHECK_INTERVAL    => 5,
+  DEFAULT_CUSTOMIZE_ES_DEBUG_LEVEL          => 2,
   DEFAULT_CUSTOMIZE_MONITOR_RELOAD_INTERVAL => 300,
   DEFAULT_CUSTOMIZE_READ_ALARM_CAUSE        => 'no',
   DEFAULT_CUSTOMIZE_TAG_ALARM_EVENT_ID      => 'no',
@@ -172,6 +174,7 @@ my $mqtt_server;
 my $mqtt_username;
 my $mqtt_password;
 my $mqtt_tick_interval;
+my $mqtt_retain;
 my $mqtt_last_tick_time = time();
 
 my $use_fcm;
@@ -188,6 +191,7 @@ my $ssl_cert_file;
 my $ssl_key_file;
 
 my $console_logs;
+my $es_debug_level;
 my $event_check_interval;
 my $monitor_reload_interval;
 my $read_alarm_cause;
@@ -376,7 +380,7 @@ sub config_get_val {
   #printInfo ("Parsing $final_val with X${fc}X");
   if ( $fc eq '!' ) {
     my $token = substr( $final_val, 1 );
-    printDebug( 'Got secret token !' . $token );
+    printDebug( 'Got secret token !' . $token,2 );
     Fatal('No secret file found') if ( !$secrets );
     my $secret_val = $secrets->val( 'secrets', $token );
     Fatal( 'Token:' . $token . ' not found in secret file' )
@@ -388,8 +392,8 @@ sub config_get_val {
 
   #printInfo("ESCONTROL_INTERFACE checking override for $parm");
   if ( exists $escontrol_interface_settings{$parm} ) {
-    printInfo( "ESCONTROL_INTERFACE overrides key: $parm with "
-        . $escontrol_interface_settings{$parm} );
+    printDebug( "ESCONTROL_INTERFACE overrides key: $parm with "
+        . $escontrol_interface_settings{$parm},2 );
     $final_val = $escontrol_interface_settings{$parm};
   }
 
@@ -410,7 +414,7 @@ sub config_get_val {
 
     my $val = $config->val( 'general', $token );
     $val = $config->val( $sect, $token ) if !$val;
-    printDebug("config string substitution: {{$token}} is '$val'");
+    printDebug("config string substitution: {{$token}} is '$val'",3);
     $final_val =~ s/\{\{$token\}\}/$val/g;
 
   }
@@ -423,10 +427,10 @@ sub loadEsConfigSettings {
   $restart_interval = config_get_val( $config, 'general', 'restart_interval',
     DEFAULT_RESTART_INTERVAL );
   if ( !$restart_interval ) {
-    printInfo('ES will not be restarted as interval is specified as 0');
+    printDebug('ES will not be restarted as interval is specified as 0',1);
   }
   else {
-    printInfo("ES will be restarted at $restart_interval seconds");
+    printDebug("ES will be restarted at $restart_interval seconds",1);
   }
   $skip_monitors = config_get_val( $config, 'general', 'skip_monitors' );
   %skip_monitors = map { $_ => !undef } split( ',', $skip_monitors );
@@ -450,6 +454,8 @@ sub loadEsConfigSettings {
   $mqtt_tick_interval =
     config_get_val( $config, 'mqtt', 'tick_interval',
     DEFAULT_MQTT_TICK_INTERVAL );
+  $mqtt_retain =
+    config_get_val( $config, 'mqtt', 'retain', DEFAULT_MQTT_RETAIN );
 
   $use_fcm = config_get_val( $config, 'fcm', 'enable', DEFAULT_FCM_ENABLE );
   $fcm_api_key = config_get_val( $config, 'fcm', 'api_key', NINJA_API_KEY );
@@ -472,6 +478,8 @@ sub loadEsConfigSettings {
   $ssl_key_file  = config_get_val( $config, 'ssl', 'key' );
   $console_logs = config_get_val( $config, 'customize', 'console_logs',
     DEFAULT_CUSTOMIZE_VERBOSE );
+  $es_debug_level = config_get_val( $config, 'customize', 'es_debug_level',
+    DEFAULT_CUSTOMIZE_ES_DEBUG_LEVEL );
   $event_check_interval =
     config_get_val( $config, 'customize', 'event_check_interval',
     DEFAULT_CUSTOMIZE_EVENT_CHECK_INTERVAL );
@@ -616,6 +624,7 @@ Use MQTT ............................. ${\(yes_or_no($use_mqtt))}
 MQTT Server .......................... ${\(value_or_undefined($mqtt_server))}
 MQTT Username ........................ ${\(value_or_undefined($mqtt_username))}
 MQTT Password ........................ ${\(present_or_not($mqtt_password))}
+MQTT Retain .......................... ${\(yes_or_no($mqtt_retain))}
 MQTT Tick Interval ................... ${\(value_or_undefined($mqtt_tick_interval))}
 
 SSL enabled .......................... ${\(yes_or_no($ssl_enabled))}
@@ -623,6 +632,7 @@ SSL cert file ........................ ${\(value_or_undefined($ssl_cert_file))}
 SSL key file ......................... ${\(value_or_undefined($ssl_key_file))}
 
 Verbose .............................. ${\(yes_or_no($console_logs))}
+ES Debug level.........................${\(value_or_undefined($es_debug_level))}
 Read alarm cause ..................... ${\(yes_or_no($read_alarm_cause))}
 Tag alarm event id ................... ${\(yes_or_no($tag_alarm_event_id))}
 Use custom notification sound ........ ${\(yes_or_no($use_custom_notification_sound))}
@@ -714,7 +724,7 @@ sub Usage {
 
 sub logrot {
   logReinit();
-  printDebug('log rotate HUP handler processed, logs re-inited');
+  printDebug('log rotate HUP handler processed, logs re-inited',1);
 
 }
 
@@ -763,10 +773,10 @@ sub REAPER {
   if ( $pid == -1 ) {    # no child waiting. Ignore it.
   }
   elsif ( WIFEXITED($?) ) {
-    printDebug("REAPER: acknowledged child $pid exiting\n");
+    printDebug("REAPER: acknowledged child $pid exiting\n",2);
   }
   else {
-    printDebug("REAPER: False alarm on $pid");
+    printDebug("REAPER: False alarm on $pid",2);
   }
   $SIG{CHLD} = \&REAPER;    # install *after* calling waitpid
 }
@@ -782,7 +792,7 @@ $SIG{CHLD} = "IGNORE";
 #$SIG{CHLD} = 'DEFAULT';
 
 my $dbh = zmDbConnect();
-my %monitors;
+my %monitors=();
 my %active_events       = ();
 my $monitor_reload_time = 0;
 my $es_start_time       = time();
@@ -791,24 +801,23 @@ my $proxy_reach_time    = 0;
 my $wss;
 my @events             = ();
 my @active_connections = ();
-my @needsReload        = ();
 my $wss;
 my $zmdc_active = 0;
 
 # Main entry point
 #
 
-printInfo("You are running version: $app_version");
-printDebug( "Started with: perl:" . $^X . " and command:" . $0 );
+printInfo("|------- Starting ES version: $app_version ---------|");
+printDebug( "Started with: perl:" . $^X . " and command:" . $0 ,1);
 
 my $zmdc_status = `zmdc.pl status zmeventnotification.pl`;
 if ( index( $zmdc_status, 'running since' ) != -1 ) {
   $zmdc_active = 1;
   printDebug(
-    'ES invoked via ZMDC. Will exit when needed and have zmdc restart it');
+    'ES invoked via ZMDC. Will exit when needed and have zmdc restart it',1);
 }
 else {
-  printDebug('ES invoked manually. Will handle restarts ourselves');
+  printDebug('ES invoked manually. Will handle restarts ourselves',1);
 }
 
 printWarning(
@@ -819,13 +828,13 @@ pipe( READER, WRITER ) || die "pipe failed: $!";
 WRITER->autoflush(1);
 my ( $rin, $rout ) = ('');
 vec( $rin, fileno(READER), 1 ) = 1;
-printDebug('Parent<--Child pipe ready');
+printDebug('Parent<--Child pipe ready',2);
 
 if ($use_fcm) {
   my $dir = dirname($token_file);
   if ( !-d $dir ) {
 
-    printInfo("Creating $dir to store FCM tokens");
+    printDebug("Creating $dir to store FCM tokens",1);
     mkdir $dir;
   }
 }
@@ -849,9 +858,12 @@ sub try_use {
 # ZM logger print and optionally console print
 sub printDebug {
   my $str = shift;
+  my $level = shift;
+  $level = $es_debug_level if not defined $level;
+  return if $es_debug_level < $level;
   my $now = strftime( '%Y-%m-%d,%H:%M:%S', localtime );
   $str = $prefix . ' ' . $str;
-  print( 'CONSOLE DEBUG:', $now, " ", $str, "\n" ) if $console_logs;
+  print( "CONSOLE DBG-$level:", $now, " ", $str, "\n" ) if $console_logs;
 
   Debug($str);
 }
@@ -860,7 +872,7 @@ sub printInfo {
   my $str = shift;
   my $now = strftime( '%Y-%m-%d,%H:%M:%S', localtime );
   $str = $prefix . ' ' . $str;
-  print( 'CONSOLE INFO:', $now, " ", $str, "\n" ) if $console_logs;
+  print( 'CONSOLE INF:', $now, " ", $str, "\n" ) if $console_logs;
 
   Info($str);
 }
@@ -869,7 +881,7 @@ sub printWarning {
   my $str = shift;
   my $now = strftime( '%Y-%m-%d,%H:%M:%S', localtime );
   $str = $prefix . ' ' . $str;
-  print( 'CONSOLE WARNING:', $now, " ", $str, "\n" ) if $console_logs;
+  print( 'CONSOLE WAR:', $now, " ", $str, "\n" ) if $console_logs;
   Warning($str);
 }
 
@@ -877,7 +889,7 @@ sub printError {
   my $str = shift;
   my $now = strftime( '%Y-%m-%d,%H:%M:%S', localtime );
   $str = $prefix . ' ' . $str;
-  print( 'CONSOLE ERROR:', $now, " ", $str, "\n" ) if $console_logs;
+  print( 'CONSOLE ERR:', $now, " ", $str, "\n" ) if $console_logs;
   Error($str);
 }
 
@@ -887,18 +899,18 @@ sub parseDetectResults {
   my ( $txt, $jsonstring ) = split( '--SPLIT--', $results );
 
   $jsonstring = '[]' if ( !$jsonstring );
-  printDebug("parse of hook:$txt and $jsonstring");
+  printDebug("parse of hook:$txt and $jsonstring",2);
   return ( $txt, $jsonstring );
 }
 
 sub saveEsControlSettings() {
   if ( !$use_escontrol_interface ) {
-    printInfo('ESCONTROL_INTERFACE is disabled. Not saving control data');
+    printDebug('ESCONTROL_INTERFACE is disabled. Not saving control data',1);
 
   }
   return if ( !$use_escontrol_interface );
-  printInfo(
-    "ESCONTROL_INTERFACE: Saving admin interfaces to $escontrol_interface_file"
+  printDebug(
+    "ESCONTROL_INTERFACE: Saving admin interfaces to $escontrol_interface_file",1
   );
   store( \%escontrol_interface_settings, $escontrol_interface_file )
     or Fatal("Error writing to $escontrol_interface_file: $!");
@@ -907,22 +919,22 @@ sub saveEsControlSettings() {
 sub loadEsControlSettings() {
 
   if ( !$use_escontrol_interface ) {
-    printInfo('ESCONTROL_INTERFACE is disabled. Not loading control data');
+    printDebug('ESCONTROL_INTERFACE is disabled. Not loading control data',1);
     return;
   }
-  printInfo(
-    "ESCONTROL_INTERFACE: Loading persistent admin interface settings from $escontrol_interface_file"
+  printDebug(
+    "ESCONTROL_INTERFACE: Loading persistent admin interface settings from $escontrol_interface_file",1
   );
   if ( !-f $escontrol_interface_file ) {
-    printInfo(
-      'ESCONTROL_INTERFACE: admin interface file does not exist, creating...');
+    printDebug(
+      'ESCONTROL_INTERFACE: admin interface file does not exist, creating...',1);
     saveEsControlSettings();
 
   }
   else {
     %escontrol_interface_settings = %{ retrieve($escontrol_interface_file) };
     my $json = encode_json( \%escontrol_interface_settings );
-    printDebug("ESCONTROL_INTERFACE: Loaded parameters: $json");
+    printDebug("ESCONTROL_INTERFACE: Loaded parameters: $json",2);
   }
 
 }
@@ -956,7 +968,7 @@ sub populateEsControlNotification {
           ESCONTROL_DEFAULT_NOTIFY;
         $found = 1;
         printDebug(
-          "ESCONTROL_INTERFACE: Discovered new monitor:$id, settings notification to ESCONTROL_DEFAULT_NOTIFY"
+          "ESCONTROL_INTERFACE: Discovered new monitor:$id, settings notification to ESCONTROL_DEFAULT_NOTIFY",1
         );
       }
 
@@ -1047,7 +1059,7 @@ sub processEsControlCommand {
     foreach my $mid (@mids) {
       $escontrol_interface_settings{notifications}{$mid} = ESCONTROL_FORCE_MUTE;
       printDebug(
-        "ESCONTROL: setting notification for Mid:$mid to ESCONTROL_FORCE_MUTE");
+        "ESCONTROL: setting notification for Mid:$mid to ESCONTROL_FORCE_MUTE",1);
     }
 
     saveEsControlSettings();
@@ -1080,7 +1092,7 @@ sub processEsControlCommand {
       $escontrol_interface_settings{notifications}{$mid} =
         ESCONTROL_FORCE_NOTIFY;
       printDebug(
-        "ESCONTROL: setting notification for Mid:$mid to ESCONTROL_FORCE_NOTIFY"
+        "ESCONTROL: setting notification for Mid:$mid to ESCONTROL_FORCE_NOTIFY",2
       );
     }
 
@@ -1196,7 +1208,7 @@ sub checkNewEvents() {
 
     # this means we have hit the reload monitor timeframe
     my $len = scalar @active_connections;
-    printInfo( 'Total event client connections: ' . $len . "\n" );
+    printDebug( 'Total event client connections: ' . $len . "\n",1 );
     my $ndx = 1;
     foreach (@active_connections) {
 
@@ -1214,39 +1226,26 @@ sub checkNewEvents() {
           . ' Plat:'
           . $_->{platform}
           . ' Push:'
-          . $_->{pushstate} );
+          . $_->{pushstate},1 );
       $ndx++;
     }
-    printInfo("Reloading Monitors...\n");
+    
     foreach my $monitor ( values(%monitors) ) {
       zmMemInvalidate($monitor);
     }
     loadMonitors();
   }
-  elsif (@needsReload) {
-    my @failedReloads = ();
-    while (@needsReload) {
-      my $monitor = shift @needsReload;
-      if ( !loadMonitor($monitor) ) {
-        printError( 'Failed re-loading monitor:'
-            . $monitor->{Id}
-            . ' adding back to reload list for next iteration' );
-        push( @failedReloads, $monitor );
-      }
-    }
-    @needsReload = @failedReloads;
-  }
-
+  
   # loop through all monitors getting SHM state
   foreach my $monitor ( values(%monitors) ) {
     my $alarm_cause = '';
     if ( !zmMemVerify($monitor) ) {
 
-      push @needsReload, $monitor;
       Warning( ' Memory verify failed for '
           . $monitor->{Name} . '(id:'
           . $monitor->{Id}
           . ')' );
+      loadMonitor($monitor);
       next;
     }
 
@@ -1271,18 +1270,29 @@ sub checkNewEvents() {
     # Alert only happens after alarm. The state before alarm
     # is STATE_PRE_ALERT. This is needed to catch alarms
     # that occur in < polling time of ES and then moves to ALERT
-    if ( $state == STATE_ALARM || $state == STATE_ALERT ) {
-      if ( !$active_events{$mid}->{$current_event} ) {
+    if ( $state == STATE_ALARM || $state == STATE_ALERT ) {  
+   
+      if  (!$active_events{$mid}->{$current_event}) {
 
+        if ($active_events{$mid}->{last_event_processed} >= $current_event) {
+          printDebug ("Discarding new event id: $current_event as last processed eid for this monitor is: ".$active_events{$mid}->{last_event_processed},2);
+          next;
+
+        }
+         
+         
+       
         # this means we haven't previously worked on this alarm
         # so create an event start object for this monitor
+        
         $eventFound++;
 
         # First we need to close any other open events for this monitor
         foreach my $ev ( keys %{ $active_events{$mid} } ) {
+          next if $ev == 'last_event_processed';
           if ( !$active_events{$mid}->{$ev}->{End} ) {
             printDebug(
-              "Closing unclosed event:$ev of Monitor:$mid as we are in a new event"
+              "Closing unclosed event:$ev of Monitor:$mid as we are in a new event",2
             );
 
             $active_events{$mid}->{$ev}->{End} = {
@@ -1314,36 +1324,36 @@ sub checkNewEvents() {
             . ' (Name:'
             . $monitor->{Name} . ') '
             . $alarm_cause
-            . "\n" );
+            . "[last processed eid:".$active_events{$mid}->{last_event_processed}."]" );
 
         push @newEvents,
           {
           Alarm      => $active_events{$mid}->{$current_event},
           MonitorObj => $monitor
           };
-
+        $active_events{$mid}->{last_event_processed} = $current_event;
       }
       else {
  # state alarm and it is present in the active event list, so we've worked on it
         printDebug(
-          "We've already worked on Monitor:$mid, Event:$current_event, not doing anything more"
+          "We've already worked on Monitor:$mid, Event:$current_event, not doing anything more",2
         );
       }
     }
 
   }
 
-  printDebug("checkEvents() new events found=$eventFound");
+  printDebug("checkEvents() new events found=$eventFound",2);
   return (@newEvents);
 }
 
 sub loadMonitor {
   my $monitor = shift;
-  printInfo( "loadMonitor: re-loading monitor " . $monitor->{Name} );
+  printDebug( "loadMonitor: re-loading monitor " . $monitor->{Name},1 );
   zmMemInvalidate($monitor);
   if ( zmMemVerify($monitor) ) {    # This will re-init shared memory
-    $monitor->{CurrentState} = zmGetMonitorState($monitor);
-    $monitor->{CurrentEvent} = zmGetLastEvent($monitor);
+    $monitor->{LastState} = zmGetMonitorState($monitor);
+    $monitor->{LastEvent} = zmGetLastEvent($monitor);
     return 1;
   }
   return 0;                         # coming here means verify failed
@@ -1352,11 +1362,8 @@ sub loadMonitor {
 # Refreshes list of monitors from DB
 #
 sub loadMonitors {
-  printInfo("Re-loading monitors, emptying needsReload() list\n");
-  @needsReload         = ();
+  printInfo("Re-loading monitors");
   $monitor_reload_time = time();
-
-  my %new_monitors = ();
 
   my $sql = 'SELECT * FROM `Monitors`
         WHERE find_in_set( `Function`, \'Modect,Mocord,Nodect\' )'
@@ -1368,24 +1375,20 @@ sub loadMonitors {
   while ( my $monitor = $sth->fetchrow_hashref() ) {
 
     if ( $skip_monitors{ $monitor->{Id} } ) {
-      printDebug("$$monitor{Id} is in skip list, not going to process");
+      printDebug("$$monitor{Id} is in skip list, not going to process",1);
       next;
     }
 
     if ( zmMemVerify($monitor) ) {
-      $monitor->{CurrentState}        = zmGetMonitorState($monitor);
-      $monitor->{CurrentEvent}        = zmGetLastEvent($monitor);
-      $new_monitors{ $monitor->{Id} } = $monitor;
+      $monitor->{LastState}        = zmGetMonitorState($monitor);
+      $monitor->{LastEvent}        = zmGetLastEvent($monitor);
+      $monitors{ $monitor->{Id} } = $monitor;
     }
-    else {
-      printError( 'loadMonitors: zmMemVerify for monitor:'
-          . $monitor->{Id}
-          . ' failed, setting up for reload in next iteration' );
-      push @needsReload, $monitor;
-
-    }
+    $monitors{ $monitor->{Id} } = $monitor;
+    printDebug ("Loading ".$monitor->{Name},1);
+    
   }    # end while fetchrow
-  %monitors = %new_monitors;
+  
 
   populateEsControlNotification();
   saveEsControlSettings();
@@ -1408,7 +1411,7 @@ sub getAllMonitorIds {
 sub updateEventinZmDB {
   my ( $eid, $notes ) = @_;
   $notes = $notes . " ";
-  printDebug( 'updating Notes clause for Event:' . $eid . ' with:' . $notes );
+  printDebug( 'updating Notes clause for Event:' . $eid . ' with:' . $notes,1 );
   my $sql = 'UPDATE Events set Notes=CONCAT(?,Notes) where Id=?';
   my $sth = $dbh->prepare_cached($sql)
     or Fatal( "UpdateEventInZmDB: Can't prepare '$sql': " . $dbh->errstr() );
@@ -1427,6 +1430,7 @@ sub getNotesFromEventDB {
     or Fatal( "getNotesFromEventDB: Can't execute: " . $sth->errstr() );
   my $notes = $sth->fetchrow_hashref();
   $sth->finish();
+  
   return $notes->{Notes};
 }
 
@@ -1453,7 +1457,7 @@ sub validateAuth {
     if ($state) {
       my $scheme = substr( $state->{Password}, 0, 1 );
       if ( $scheme eq '*' ) {    # mysql decode
-        printDebug('Comparing using mysql hash');
+        printDebug('Comparing using mysql hash',2);
         if ( !try_use('Crypt::MySQL qw(password password41)') ) {
           Fatal('Crypt::MySQL  missing, cannot validate password');
           return 0;
@@ -1471,7 +1475,7 @@ sub validateAuth {
         # perl bcrypt libs can't handle $2b$ or $2y$
         $saved_pass =~ s/^\$2.\$/\$2a\$/;
         my $new_hash = Crypt::Eksblowfish::Bcrypt::bcrypt( $p, $saved_pass );
-        printDebug("Comparing using bcrypt $new_hash to $saved_pass");
+        printDebug("Comparing using bcrypt $new_hash to $saved_pass",2);
         return $new_hash eq $saved_pass;
       }
     }
@@ -1482,7 +1486,7 @@ sub validateAuth {
   }
   else {
     # admin category
-    printDebug('Detected escontrol interface auth');
+    printDebug('Detected escontrol interface auth',1);
     return ( $p eq $escontrol_interface_password )
       && ($use_escontrol_interface);
 
@@ -1492,7 +1496,7 @@ sub validateAuth {
 # deletes a token - invoked if FCM responds with an incorrect token error
 sub deleteFCMToken {
   my $dtoken = shift;
-  printDebug( 'DeleteToken called with ...' . substr( $dtoken, -10 ) );
+  printDebug( 'DeleteToken called with ...' . substr( $dtoken, -10 ),2 );
   return if ( !-f $token_file );
 
   open( my $fh, '<', $token_file ) or Fatal("Error opening $token_file: $!");
@@ -1560,7 +1564,7 @@ sub sendOverMQTTBroker {
     }
   );
 
-  printDebug( 'requesting MQTT Publishing Job for EID:' . $alarm->{EventId} );
+  printDebug( 'requesting MQTT Publishing Job for EID:' . $alarm->{EventId} ,2);
   my $topic = join( '/', 'zoneminder', $alarm->{MonitorId} );
 
   # Net:MQTT:Simple does not appear to be thread/fork safe so send message to
@@ -1600,7 +1604,7 @@ sub sendOverWebSocket {
   printDebug( 'Child: posting job to send out message to id:'
       . $ac->{id} . '->'
       . $ac->{conn}->ip() . ':'
-      . $ac->{conn}->port() );
+      . $ac->{conn}->port(),2 );
   print WRITER 'message--TYPE--' . $ac->{id} . '--SPLIT--' . $str . "\n";
 
 }
@@ -1621,14 +1625,14 @@ sub sendOverFCM {
   my $pic = $picture_url =~ s/EVENTID/$eid/gr;
   if ( $resCode == 1 ) {
     printDebug(
-      'FCM called when hook failed, so making sure we do not use objdetect in url'
+      'FCM called when hook failed, so making sure we do not use objdetect in url',2
     );
     $pic = $pic =~ s/objdetect/snapshot/gr;
   }
 
   if ( !$event_start_hook || !$use_hooks ) {
     printDebug(
-      'FCM called when there is no start hook/or hooks are disabled, so making sure we do not use objdetect in url'
+      'FCM called when there is no start hook/or hooks are disabled, so making sure we do not use objdetect in url',2
     );
     $pic = $pic =~ s/objdetect/snapshot/gr;
   }
@@ -1647,7 +1651,7 @@ sub sendOverFCM {
     my $dpic = $pic;
     $dpic =~ s/pass(word)?=(.*?)($|&)/pass$1=xxx$3/g;
 
-    printDebug("Alarm frame matched, changing picture url to:$dpic ");
+    printDebug("Alarm frame matched, changing picture url to:$dpic ",2);
     $alarm->{Cause} = substr( $alarm->{Cause}, 4 )
       if ( !$keep_frame_match_type );
 
@@ -1655,7 +1659,7 @@ sub sendOverFCM {
   elsif ( substr( $alarm->{Cause}, 0, 3 ) eq '[s]' ) {
     my $npic = $pic =~ s/BESTMATCH/snapshot/gr;
     $pic = $npic;
-    printDebug("Snapshot frame matched, changing picture url to:$pic ");
+    printDebug("Snapshot frame matched, changing picture url to:$pic ",2);
     $alarm->{Cause} = substr( $alarm->{Cause}, 4 )
       if ( !$keep_frame_match_type );
   }
@@ -1741,7 +1745,7 @@ sub sendOverFCM {
   $djson =~ s/pass(word)?=(.*?)($|&)/pass$1=xxx$3/g;
 
   printDebug( "Final JSON being sent is: $djson to token: ..."
-      . substr( $obj->{token}, -6 ) );
+      . substr( $obj->{token}, -6 ),2 );
   my $req = HTTP::Request->new( 'POST', $uri );
   $req->header(
     'Content-Type'  => 'application/json',
@@ -1755,7 +1759,7 @@ sub sendOverFCM {
 
   if ( $res->is_success ) {
     $msg = $res->decoded_content;
-    printInfo( 'FCM push message returned a 200 with body ' . $res->content );
+    printDebug( 'FCM push message returned a 200 with body ' . $res->content ,1);
     eval { $json_string = decode_json($msg); };
     if ($@) {
 
@@ -1769,14 +1773,14 @@ sub sendOverFCM {
       if ( $reason eq 'NotRegistered'
         || $reason eq 'InvalidRegistration' )
       {
-        printInfo('Removing this token as FCM doesn\'t recognize it');
+        printDebug('Removing this token as FCM doesn\'t recognize it',1);
         deleteFCMToken( $obj->{token} );
       }
 
     }
   }
   else {
-    printInfo( 'FCM push message Error:' . $res->status_line );
+    printError( 'FCM push message Error:' . $res->status_line );
   }
 
   # send supplementary event data over websocket, same SSL state issue
@@ -1812,21 +1816,21 @@ sub processJobs {
 
       # printDebug("processJobs inside read_avail > 0");
       chomp( my $txt = sysreadline(READER) );
-      printDebug("RAW TEXT-->$txt");
+      printDebug("RAW TEXT-->$txt",2);
       my ( $job, $msg ) = split( '--TYPE--', $txt );
 
       if ( $job eq 'message' ) {
         my ( $id, $tmsg ) = split( '--SPLIT--', $msg );
-        printDebug("GOT JOB==>To: $id, message: $tmsg");
+        printDebug("GOT JOB==>To: $id, message: $tmsg",2);
         foreach (@active_connections) {
           if ( ( $_->{id} eq $id ) && exists $_->{conn} ) {
             my $tip   = $_->{conn}->ip();
             my $tport = $_->{conn}->port();
-            printInfo("Sending child message to $tip:$tport...");
+            printDebug("Sending child message to $tip:$tport...",2);
             eval { $_->{conn}->send_utf8($tmsg); };
             if ($@) {
 
-              printInfo( 'Marking ' . $_->{conn}->ip() . ' as bad socket' );
+              printDebug( 'Marking ' . $_->{conn}->ip() . ' as bad socket' ,1);
               $_->{state} = INVALID_CONNECTION;
 
             }
@@ -1838,7 +1842,7 @@ sub processJobs {
       # Update badge count of active connection
       elsif ( $job eq 'badge' ) {
         my ( $id, $badge ) = split( '--SPLIT--', $msg );
-        printDebug( 'GOT JOB==> Update badge to:' . $badge . ' for id:' . $id );
+        printDebug( 'GOT JOB==> Update badge to:' . $badge . ' for id:' . $id,2 );
         foreach (@active_connections) {
           if ( $_->{id} eq $id ) {
             $_->{badge} = $badge;
@@ -1851,9 +1855,7 @@ sub processJobs {
       # hook script result will be updated in ZM DB
       elsif ( $job eq 'event_description' ) {
         my ( $mid, $eid, $desc ) = split( '--SPLIT--', $msg );
-        printDebug( 'Job: Update monitor ' . $mid . ' description:' . $desc );
-
-        printInfo("Force updating event $eid with desc:$desc");
+        printDebug( 'Job: Update monitor ' . $mid . ' description:' . $desc,2 );
         updateEventinZmDB( $eid, $desc );
 
       }
@@ -1865,7 +1867,7 @@ sub processJobs {
             . $mid . ' to '
             . $timeval
             . ' for id:'
-            . $id );
+            . $id ,2);
         foreach (@active_connections) {
           if ( $_->{id} eq $id ) {
             $_->{last_sent}->{$mid} = $timeval;
@@ -1879,7 +1881,7 @@ sub processJobs {
       elsif ( $job eq 'active_event_update' ) {
         my ( $mid, $eid, $type, $key, $val ) = split( '--SPLIT--', $msg );
         printDebug(
-          "Job: Update active_event eid:$eid, mid:$mid, type:$type, field:$key to: $val"
+          "Job: Update active_event eid:$eid, mid:$mid, type:$type, field:$key to: $val",2
         );
         $active_events{$mid}->{$eid}->{$type}->{State} = $val
           if ( $key eq 'State' );
@@ -1896,25 +1898,32 @@ sub processJobs {
       }
       elsif ( $job eq 'active_event_delete' ) {
         my ( $mid, $eid ) = split( '--SPLIT--', $msg );
-        printDebug("Job: Deleting active_event eid:$eid, mid:$mid");
+        printDebug("Job: Deleting active_event eid:$eid, mid:$mid",2);
         delete( $active_events{$mid}->{$eid} );
         $child_forks--;
       }
       elsif ( $job eq 'mqtt_publish' ) {
         my ( $id, $topic, $payload ) = split( '--SPLIT--', $msg );
-        printDebug("Job: MQTT Publish on topic: $topic");
+        printDebug("Job: MQTT Publish on topic: $topic",2);
         foreach (@active_connections) {
           if ( ( $_->{id} eq $id ) && exists $_->{mqtt_conn} ) {
-            $_->{mqtt_conn}->publish( $topic => $payload );
+            if ( $mqtt_retain ) {
+              printDebug("Job: MQTT Publish with retain",2);
+              $_->{mqtt_conn}->retain( $topic => $payload );
+            }
+            else {
+              printDebug("Job: MQTT Publish",2);
+              $_->{mqtt_conn}->publish( $topic => $payload );
+            }
           }
         }
       }
       else {
-        printDebug('Job message not recognized!');
+        printError("Job message [$job] not recognized!");
       }
     }
   }
-  printDebug('Finished processJobs()');
+  # printDebug('Finished processJobs()');
 }
 
 # returns extra fields associated to a connection
@@ -1963,7 +1972,7 @@ sub checkConnection {
         # It may still be a bogus token, so don't risk keeping connection stored
         if ( exists $_->{conn} ) {
           my $conn = $_->{conn};
-          printInfo( 'Rejecting '
+          printError( 'Rejecting '
               . $conn->ip()
               . getConnFields($conn)
               . ' - authentication timeout' );
@@ -2011,7 +2020,7 @@ sub checkConnection {
     @active_connections;
 
   printDebug(
-    "After tick: TOTAL: $ac,  ES_CONTROL: $escontrol_conn, FCM+WEB: $fcm_conn, FCM: $fcm_no_conn, WEB: $web_conn, MQTT:$mqtt_conn, invalid WEB: $web_no_conn, PENDING: $pend_conn"
+    "After tick: TOTAL: $ac,  ES_CONTROL: $escontrol_conn, FCM+WEB: $fcm_conn, FCM: $fcm_no_conn, WEB: $web_conn, MQTT:$mqtt_conn, invalid WEB: $web_no_conn, PENDING: $pend_conn",3
   );
 
 }
@@ -2034,7 +2043,7 @@ sub processIncomingMessage {
   eval { $json_string = decode_json($msg); };
   if ($@) {
 
-    printInfo("Failed decoding json in processIncomingMessage: $@");
+    printError("Failed decoding json in processIncomingMessage: $@");
     my $str = encode_json(
       { event  => 'malformed',
         type   => '',
@@ -2145,17 +2154,17 @@ sub processIncomingMessage {
               || $_->{conn}->port() ne $conn->port() )
             )
           {
-            printDebug('token matched but connection did not');
-            printInfo( 'Duplicate token found: marking ...'
+            printDebug('token matched but connection did not',2);
+            printDebug( 'Duplicate token found: marking ...'
                 . substr( $_->{token}, -10 )
-                . ' to be deleted' );
+                . ' to be deleted',1 );
 
             $_->{state} = PENDING_DELETE;
 
           }
           else    # token matches and connection matches, so it may be an update
           {
-            printDebug('token and connection matched');
+            printDebug('token and connection matched',2);
             $_->{type}     = FCM;
             $_->{token}    = $json_string->{data}->{token};
             $_->{platform} = $json_string->{data}->{platform};
@@ -2178,7 +2187,7 @@ sub processIncomingMessage {
               $_->{intlist} = '-1';
             }
             $_->{pushstate} = $json_string->{data}->{state};
-            printInfo( 'Storing token ...'
+            printDebug( 'Storing token ...'
                 . substr( $_->{token}, -10 )
                 . ',monlist:'
                 . $_->{monlist}
@@ -2186,7 +2195,7 @@ sub processIncomingMessage {
                 . $_->{intlist}
                 . ',pushstate:'
                 . $_->{pushstate}
-                . "\n" );
+                . "\n",1 );
             my ( $emonlist, $eintlist ) = saveFCMTokens(
               $_->{token},    $_->{monlist}, $_->{intlist},
               $_->{platform}, $_->{pushstate}
@@ -2204,7 +2213,7 @@ sub processIncomingMessage {
           && ( $_->{token} ne $json_string->{data}->{token} ) )
         {
           printDebug(
-            'connection matched but token did not. first registration?');
+            'connection matched but token did not. first registration?',2);
           $_->{type}     = FCM;
           $_->{token}    = $json_string->{data}->{token};
           $_->{platform} = $json_string->{data}->{platform};
@@ -2227,7 +2236,7 @@ sub processIncomingMessage {
             $_->{intlist} = '-1';
           }
           $_->{pushstate} = $json_string->{data}->{state};
-          printInfo( 'Storing token ...'
+          printDebug( 'Storing token ...'
               . substr( $_->{token}, -10 )
               . ',monlist:'
               . $_->{monlist}
@@ -2235,7 +2244,7 @@ sub processIncomingMessage {
               . $_->{intlist}
               . ',pushstate:'
               . $_->{pushstate}
-              . "\n" );
+              . "\n",1 );
           my ( $emonlist, $eintlist ) = saveFCMTokens(
             $_->{token},    $_->{monlist}, $_->{intlist},
             $_->{platform}, $_->{pushstate}
@@ -2294,7 +2303,7 @@ sub processIncomingMessage {
 
           $_->{monlist} = $monlist;
           $_->{intlist} = $intlist;
-          printInfo( 'Contrl: Storing token ...'
+          printDebug( 'Contrl: Storing token ...'
               . substr( $_->{token}, -10 )
               . ',monlist:'
               . $_->{monlist}
@@ -2302,7 +2311,7 @@ sub processIncomingMessage {
               . $_->{intlist}
               . ',pushstate:'
               . $_->{pushstate}
-              . "\n" );
+              . "\n" ,2);
           saveFCMTokens(
             $_->{token},    $_->{monlist}, $_->{intlist},
             $_->{platform}, $_->{pushstate}
@@ -2349,7 +2358,7 @@ sub processIncomingMessage {
       if ( exists( $json_string->{category} ) );
 
     if ( $category ne 'normal' && $category ne 'escontrol' ) {
-      printInfo("Auth category $category is invalid. Resetting it to 'normal'");
+      printDebug("Auth category $category is invalid. Resetting it to 'normal'",1);
       $category = 'normal';
     }
 
@@ -2386,9 +2395,9 @@ sub processIncomingMessage {
             Error("Error sending BADAUTH: $@");
 
           }
-          printInfo(
+          printDebug(
             'marking for deletion - bad authentication provided by '
-              . $_->{conn}->ip() );
+              . $_->{conn}->ip() ,1);
           $_->{state} = PENDING_DELETE;
         }
         else {
@@ -2461,12 +2470,12 @@ sub initMQTT {
       $ENV{MQTT_SIMPLE_ALLOW_INSECURE_LOGIN} = 'true';
 
       $mqtt_connection->login( $mqtt_username, $mqtt_password );
-      printInfo('Intialized MQTT with auth');
+      printDebug('Intialized MQTT with auth',1);
     }
   }
   else {
     if ( $mqtt_connection = Net::MQTT::Simple->new($mqtt_server) ) {
-      printInfo('Intialized MQTT without auth');
+      printDebug('Intialized MQTT without auth',1);
     }
   }
 
@@ -2487,10 +2496,10 @@ sub initMQTT {
 
 # loads FCM tokens from file
 sub initFCMTokens {
-  printInfo('Initializing FCM tokens...');
+  printDebug('Initializing FCM tokens...',1);
   if ( !-f $token_file ) {
     open( my $foh, '>', $token_file ) or Fatal("Error opening $token_file: $!");
-    printInfo( 'Creating ' . $token_file );
+    printDebug( 'Creating ' . $token_file,1 );
     print $foh '';
     close($foh);
   }
@@ -2542,7 +2551,7 @@ sub saveFCMTokens {
   return if ( !$use_fcm );
   my $stoken = shift;
   if ( $stoken eq '' ) {
-    printDebug('Not saving, no token. Desktop?');
+    printDebug('Not saving, no token. Desktop?',2);
     return;
   }
   my $smonlist   = shift;
@@ -2552,12 +2561,12 @@ sub saveFCMTokens {
   if ( ( $spushstate eq '' ) && ( $stoken ne '' ) ) {
     $spushstate = 'enabled';
     printDebug(
-      'Overriding token state, setting to enabled as I got a null with a valid token'
+      'Overriding token state, setting to enabled as I got a null with a valid token',1
     );
   }
 
-  printInfo(
-    "SaveTokens called with:monlist=$smonlist, intlist=$sintlist, platform=$splatform, push=$spushstate"
+  printDebug(
+    "SaveTokens called with:monlist=$smonlist, intlist=$sintlist, platform=$splatform, push=$spushstate",2
   );
 
   return if ( $stoken eq '' );
@@ -2576,13 +2585,13 @@ sub saveFCMTokens {
       rsplit( qr/:/, $_, 5 );    #split (":",$_);
     if ( $token eq $stoken )     # update token in file with new information
     {
-      printInfo("token matched, previously stored monlist is: $monlist");
+      printDebug("token matched, previously stored monlist is: $monlist",1);
       $smonlist   = $monlist   if ( $smonlist eq '-1' );
       $sintlist   = $intlist   if ( $sintlist eq '-1' );
       $spushstate = $pushstate if ( $spushstate eq '' );
-      printInfo( 'updating ...'
+      printDebug( 'updating ...'
           . substr( $token, -10 )
-          . " with push:$pushstate & monlist:$monlist" );
+          . " with push:$pushstate & monlist:$monlist" ,2);
       print $fh "$stoken:$smonlist:$sintlist:$splatform:$spushstate\n";
       $found = 1;
     }
@@ -2590,9 +2599,9 @@ sub saveFCMTokens {
     {
       if ( $pushstate eq '' ) {
         $pushstate = 'enabled';
-        printDebug('nochange, but pushstate was EMPTY. WHY?');
+        printDebug('nochange, but pushstate was EMPTY. WHY?',2);
       }
-      printDebug("no change - saving token with $pushstate");
+      printDebug("no change - saving token with $pushstate",2);
       print $fh "$token:$monlist:$intlist:$platform:$pushstate\n";
     }
 
@@ -2602,7 +2611,7 @@ sub saveFCMTokens {
   $sintlist = '' if ( $sintlist eq '-1' );
 
   if ( !$found ) {
-    printInfo("token not found, creating new record with monlist=$smonlist");
+    printDebug("token not found, creating new record with monlist=$smonlist",1);
     print $fh "$stoken:$smonlist:$sintlist:$splatform:$spushstate\n";
   }
   close($fh);
@@ -2627,7 +2636,7 @@ sub uniq {
     if ( ( $pushstate ne 'enabled' ) && ( $pushstate ne 'disabled' ) ) {
       printDebug(
         "huh? uniq read $token,$monlist,$intlist,$platform, $pushstate => forcing state to enabled"
-      );
+      ,2);
       $pushstate = 'enabled';
 
     }
@@ -2674,6 +2683,8 @@ sub getInterval {
 sub isInList {
   my $monlist = shift;
   my $mid     = shift;
+
+  return 1 if ($monlist eq "");
 
   my @mids = split( ',', $monlist );
   my $found = 0;
@@ -2818,7 +2829,7 @@ sub sendEvent {
     . '--SPLIT--'
     . $t . "\n";
 
-  printDebug('child finished writing to parent');
+  printDebug('child finished writing to parent',3);
 
 }
 
@@ -2829,7 +2840,7 @@ sub isAllowedChannel {
 
   my $retval = 0;
 
-  printDebug("isAllowedChannel: got type:$event_type resCode:$rescode");
+  printDebug("isAllowedChannel: got type:$event_type resCode:$rescode",2);
 
   my $channel_exists;
   if ( $event_type eq 'event_start' ) {
@@ -2882,15 +2893,15 @@ sub shouldSendEventToConn {
     my $id   = $alarm->{MonitorId};
     my $name = $alarm->{Name};
     if ( getNotificationStatusEsControl($id) == ESCONTROL_FORCE_NOTIFY ) {
-      printInfo(
-        "ESCONTROL: Notifications are force enabled for Monitor:$name($id), returning true"
+      printDebug(
+        "ESCONTROL: Notifications are force enabled for Monitor:$name($id), returning true",1
       );
       return 1;
     }
 
     if ( getNotificationStatusEsControl($id) == ESCONTROL_FORCE_MUTE ) {
-      printInfo(
-        "ESCONTROL: Notifications are muted for Monitor:$name($id), not sending"
+      printDebug(
+        "ESCONTROL: Notifications are muted for Monitor:$name($id), not sending",1
       );
       return 0;
 
@@ -2900,26 +2911,26 @@ sub shouldSendEventToConn {
 
   my $id     = getConnectionIdentity($ac);
   my $connId = $ac->{id};
-  printInfo("Checking alarm rules for $id");
+  printDebug("Checking alarm rules for $id",1);
 
-  if ( $monlist eq "" || isInList( $monlist, $alarm->{MonitorId} ) ) {
+  if ( isInList( $monlist, $alarm->{MonitorId} ) ) {
     my $mint = getInterval( $intlist, $monlist, $alarm->{MonitorId} );
     my $elapsed;
     my $t = time();
     if ( $last_sent->{ $alarm->{MonitorId} } ) {
       $elapsed = time() - $last_sent->{ $alarm->{MonitorId} };
       if ( $elapsed >= $mint ) {
-        printInfo( 'Monitor '
+        printDebug( 'Monitor '
             . $alarm->{MonitorId}
-            . " event: should send out as  $elapsed is >= interval of $mint" );
+            . " event: should send out as  $elapsed is >= interval of $mint" ,1);
         $retVal = 1;
 
       }
       else {
 
-        printInfo( 'Monitor '
+        printDebug( 'Monitor '
             . $alarm->{MonitorId}
-            . " event: should NOT send this out as $elapsed is less than interval of $mint"
+            . " event: should NOT send this out as $elapsed is less than interval of $mint",1
         );
         $retVal = 0;
       }
@@ -2929,17 +2940,17 @@ sub shouldSendEventToConn {
 
       # This means we have no record of sending any event to this monitor
       #$last_sent->{$_->{MonitorId}} = time();
-      printInfo( 'Monitor '
+      printDebug( 'Monitor '
           . $alarm->{MonitorId}
-          . ' event: last time not found, so should send' );
+          . ' event: last time not found, so should send',1 );
       $retVal = 1;
     }
   }
   else    # monitorId not in list
   {
-    printInfo( 'should NOT send alarm as Monitor '
+    printDebug( 'should NOT send alarm as Monitor '
         . $alarm->{MonitorId}
-        . ' is excluded' );
+        . ' is excluded',1 );
     $retVal = 0;
   }
 
@@ -2983,7 +2994,7 @@ sub processNewAlarmsInFork {
     #print "FORK:".Dumper(\$alarm);
     my $now = time();
     if ( $now - $start_time > 3600 ) {
-      printInfo('reached an hour, bailing...');
+      printInfo('Thread alive for an hour, bailing...');
 
       $doneProcessing = 1;
 
@@ -3019,10 +3030,10 @@ sub processNewAlarmsInFork {
             $cmd = $cmd . ' "' . $event->Path() . '"';
             printDebug( 'Adding event path:'
                 . $event->Path()
-                . ' to hook for image storage' );
+                . ' to hook for image storage' ,2);
 
           }
-          printInfo( 'Invoking hook on event start:' . $cmd );
+          printDebug( 'Invoking hook on event start:' . $cmd ,1);
 
           if ( $cmd =~ /^(.*)$/ ) {
             $cmd = $1;
@@ -3033,8 +3044,8 @@ sub processNewAlarmsInFork {
           $hookResult      = $? >> 8;
           $startHookResult = $hookResult;
 
-          printInfo(
-            "hook start returned with text:$resTxt json:$resJsonString exit:$hookResult"
+          printDebug(
+            "hook start returned with text:$resTxt json:$resJsonString exit:$hookResult",1
           );
 
           if ( $use_hook_description && $hookResult == 0 ) {
@@ -3122,7 +3133,7 @@ sub processNewAlarmsInFork {
             $api_cmd = $api_cmd . ' "' . $event->Path() . '"';
             printDebug( 'Adding event path:'
                 . $event->Path()
-                . ' to api_cmd for image location' );
+                . ' to api_cmd for image location' ,2);
 
           }
 
@@ -3134,7 +3145,7 @@ sub processNewAlarmsInFork {
           printInfo("Returned from $api_cmd");
           chomp($api_res);
           my $api_retcode = $? >> 8;
-          printDebug("API push script returned : $api_retcode");
+          printDebug("API push script returned : $api_retcode",1);
 
         }
         else {
@@ -3143,13 +3154,13 @@ sub processNewAlarmsInFork {
         }
 
       }
-      printInfo('Matching alarm to connection rules...');
+      printDebug('Matching alarm to connection rules...',1);
       my ($serv) = @_;
       foreach (@active_connections) {
 
         if ( shouldSendEventToConn( $temp_alarm_obj, $_ ) ) {
           printDebug(
-            'shouldSendEventToConn returned true, so calling sendEvent');
+            'shouldSendEventToConn returned true, so calling sendEvent',1);
           sendEvent( $temp_alarm_obj, $_, 'event_start', $hookResult );
 
         }
@@ -3163,7 +3174,7 @@ sub processNewAlarmsInFork {
       # this means we need to invoke a hook
       if ( $alarm->{Start}->{State} ne 'done' ) {
         printDebug(
-          'Not yet sending out end notification as start hook/notify is not done'
+          'Not yet sending out end notification as start hook/notify is not done',2
         );
 
         #$hookResult = 0; # why ? forgot.
@@ -3174,13 +3185,13 @@ sub processNewAlarmsInFork {
         if ($startHookString) {
           if ( index( $notes, 'detected:' ) == -1 ) {
             printDebug(
-              "ZM overwrote detection, adding detection notes back into DB [$startHookString]"
+              "ZM overwrote detection DB, current notes: [$notes], adding detection notes back into DB [$startHookString]",1
             );
-            $notes = $startHookString . " " . $notes;
-            updateEventinZmDB( $eid, $notes );
+            # This will be prefixed, so no need to add old notes back
+            updateEventinZmDB( $eid, $startHookString );
           }
           else {
-            printDebug("DB Event notes contain detection text, all good");
+            printDebug("DB Event notes contain detection text, all good",2);
           }
         }
 
@@ -3199,10 +3210,10 @@ sub processNewAlarmsInFork {
             $cmd = $cmd . ' "' . $event->Path() . '"';
             printDebug( 'Adding event path:'
                 . $event->Path()
-                . ' to hook for image storage' );
+                . ' to hook for image storage',2 );
 
           }
-          printInfo( 'Invoking hook on event end:' . $cmd );
+          printDebug( 'Invoking hook on event end:' . $cmd ,1);
           if ( $cmd =~ /^(.*)$/ ) {
             $cmd = $1;
           }
@@ -3212,14 +3223,14 @@ sub processNewAlarmsInFork {
           $hookResult = $? >> 8;
 
           $alarm->{End}->{State} = 'ready';
-          printInfo(
-            "hook end returned with text:$resTxt  json:$resJsonString exit:$hookResult"
+          printDebug(
+            "hook end returned with text:$resTxt  json:$resJsonString exit:$hookResult",1
           );
 
           #tbd  - was this a typo? Why ->{Cause}?
           # kept it here for now
           #$alarm->{Cause} = $resTxt . ' ' . $alarm->{Cause};
-          $alarm->{End}->{Cause} = $resTxt;
+          #$alarm->{End}->{Cause} = $resTxt;
 
           #I think this is what we need
 
@@ -3271,7 +3282,7 @@ sub processNewAlarmsInFork {
               || !$event_end_hook
               || !$use_hooks )
             {
-              printInfo('Sending push over API as it is allowed for event_end');
+              printDebug('Sending push over API as it is allowed for event_end',1);
 
               my $api_cmd =
                   $api_push_script . ' '
@@ -3286,7 +3297,7 @@ sub processNewAlarmsInFork {
                 $api_cmd = $api_cmd . ' "' . $event->Path() . '"';
                 printDebug( 'Adding event path:'
                     . $event->Path()
-                    . ' to api_cmd for image location' );
+                    . ' to api_cmd for image location',2 );
 
               }
 
@@ -3296,22 +3307,22 @@ sub processNewAlarmsInFork {
                 $api_cmd = $1;
               }
               my $res = `$api_cmd`;
-              printDebug("returned from api cmd for event_end");
+              printDebug("returned from api cmd for event_end",2);
               chomp($res);
               my $retcode = $? >> 8;
-              printDebug("API push script returned : $retcode");
+              printDebug("API push script returned (event_end) : $retcode",1);
 
             }
             else {
-              printInfo(
-                'Not sending push over API as it is not allowed for event_start'
+              printDebug(
+                'Not sending push over API as it is not allowed for event_start',1
               );
             }
 
           }
           else {
             printDebug(
-              'Not sending event_end push over API as send_event_end_notification is no'
+              'Not sending event_end push over API as send_event_end_notification is no',1
             );
           }
 
@@ -3319,11 +3330,17 @@ sub processNewAlarmsInFork {
 
         # end will never be ready before start is ready
         # this means we need to notify
-        printInfo('Matching alarm to connection rules...');
+        printDebug('Matching alarm to connection rules...',1);
 
         my ($serv) = @_;
         foreach (@active_connections) {
-          sendEvent( $temp_alarm_obj, $_, 'event_end', $hookResult );
+
+           if(isInList($_->{monlist}, $temp_alarm_obj->{MonitorId})) {
+             sendEvent( $temp_alarm_obj, $_, 'event_end', $hookResult );
+           } else {
+            printDebug ("Skipping FCM notification as Monitor:".$temp_alarm_obj->{Name}."(".$temp_alarm_obj->{MonitorId}.") is excluded from zmNinja monitor list",1);
+          }
+          
         }    # foreach active_connections
       }
 
@@ -3353,7 +3370,7 @@ sub processNewAlarmsInFork {
 
         # The alarm has ended
       {
-        printDebug("For $mid ($mname), SHM says: state=$state, eid=$shm_eid");
+        printDebug("For $mid ($mname), SHM says: state=$state, eid=$shm_eid",3);
         printInfo("Event $eid for Monitor $mid has finished");
         $endProcessed = 1;
 
@@ -3366,13 +3383,13 @@ sub processNewAlarmsInFork {
         printDebug( 'Event end object is: state=>'
             . $alarm->{End}->{State}
             . ' with cause=>'
-            . $alarm->{End}->{Cause} );
+            . $alarm->{End}->{Cause} ,3);
       }
     }
     sleep(2);
   }
 
-  printDebug('exiting');
+  printDebug('exiting',1);
   print WRITER 'active_event_delete--TYPE--' . $mid . '--SPLIT--' . $eid . "\n";
   close(WRITER);
 
@@ -3383,7 +3400,7 @@ sub restartES {
 
   $wss->shutdown();
   if ($zmdc_active) {
-    printDebug('Exiting, zmdc will restart me');
+    printInfo('Exiting, zmdc will restart me');
     exit 0;
   }
   else {
@@ -3392,7 +3409,7 @@ sub restartES {
     # untaint via reg-exp
     if ( $0 =~ /^(.*)$/ ) {
       my $f = $1;
-      printDebug("restarting $f");
+      printInfo("restarting $f");
       exec($f);
     }
   }
@@ -3404,7 +3421,7 @@ sub initSocketServer {
   checkNewEvents();
   my $ssl_server;
   if ($ssl_enabled) {
-    printInfo('About to start listening to socket');
+    printDebug('About to start listening to socket',2);
     eval {
       $ssl_server = IO::Socket::SSL->new(
         Listen        => 10,
@@ -3431,7 +3448,7 @@ sub initSocketServer {
     listen => $ssl_enabled ? $ssl_server : $port,
     tick_period => $event_check_interval,
     on_tick     => sub {
-      printDebug('---------->Tick START<--------------');
+      printDebug('---------->Tick START<--------------',2);
       if ( $restart_interval
         && ( ( time() - $es_start_time ) > $restart_interval ) )
       {
@@ -3447,7 +3464,7 @@ sub initSocketServer {
         && ( ( time() - $mqtt_last_tick_time ) > $mqtt_tick_interval ) )
       {
         printDebug(
-          'MQTT tick interval (' . $mqtt_tick_interval . ' sec) elapsed.' );
+          'MQTT tick interval (' . $mqtt_tick_interval . ' sec) elapsed.',2 );
         $mqtt_last_tick_time = time();
         foreach (@active_connections) {
           $_->{mqtt_conn}->tick(0) if ( $_->{type} == MQTT );
@@ -3457,12 +3474,12 @@ sub initSocketServer {
       checkConnection();
       processJobs();
 
-      printInfo("There are $child_forks active child forks...");
+      printDebug("There are $child_forks active child forks...",2);
       my (@newEvents) = checkNewEvents();
 
       #print Dumper(\@newEvents);
 
-      printInfo( 'There are ' . scalar @newEvents . ' new Events to process' );
+      printDebug( 'There are ' . scalar @newEvents . ' new Events to process',2 );
       foreach (@newEvents) {
         $child_forks++;
         my $pid = fork;
@@ -3480,12 +3497,12 @@ sub initSocketServer {
           $dbh = zmDbConnect(1);
           logReinit();
 
-          printInfo(
-            "Forked process:$$ to handle alarm eid:" . $_->{Alarm}->{EventId} );
+          printDebug(
+            "Forked process:$$ to handle alarm eid:" . $_->{Alarm}->{EventId},1 );
 
 # send it the list of current events to handle bcause checkNewEvents() will clean it
           processNewAlarmsInFork($_);
-          printInfo("Ending process:$$ to handle alarms");
+          printDebug("Ending process:$$ to handle alarms",1);
 
           exit 0;
 
@@ -3493,33 +3510,33 @@ sub initSocketServer {
 
       }
 
-      printDebug('---------->Tick END<--------------');
+      printDebug('---------->Tick END<--------------',2);
     },
 
     # called when a new connection comes in
     on_connect => sub {
       my ( $serv, $conn ) = @_;
-      printDebug('---------->onConnect START<--------------');
+      printDebug('---------->onConnect START<--------------',2);
       my ($len) = scalar @active_connections;
-      printInfo( 'got a websocket connection from '
+      printDebug( 'got a websocket connection from '
           . $conn->ip() . ' ('
           . $len
-          . ') active connections' );
+          . ') active connections' ,1);
 
       #print Dumper($conn);
       $conn->on(
         utf8 => sub {
-          printDebug('---------->onConnect msg START<--------------');
+          printDebug('---------->onConnect msg START<--------------',2);
           my ( $conn, $msg ) = @_;
           my $dmsg = $msg;
           $dmsg =~ s/\"password\":\"(.*?)\"/"password":\*\*\*/;
-          printDebug("Raw incoming message: $dmsg");
+          printDebug("Raw incoming message: $dmsg",3);
           processIncomingMessage( $conn, $msg );
-          printDebug('---------->onConnect msg STOP<--------------');
+          printDebug('---------->onConnect msg STOP<--------------',2);
         },
         handshake => sub {
           my ( $conn, $handshake ) = @_;
-          printDebug('---------->onConnect:handshake START<--------------');
+          printDebug('---------->onConnect:handshake START<--------------',2);
           my $fields = '';
 
           # Stuff in more headers you want here over time
@@ -3553,21 +3570,21 @@ sub initSocketServer {
             badge        => 0,
             category     => 'normal',
             };
-          printInfo( 'Websockets: New Connection Handshake requested from '
+          printDebug( 'Websockets: New Connection Handshake requested from '
               . $conn->ip() . ':'
               . $conn->port()
               . getConnFields($conn)
               . ' state=pending auth, id='
-              . $id );
+              . $id,1 );
 
-          printDebug('---------->onConnect:handshake END<--------------');
+          printDebug('---------->onConnect:handshake END<--------------',2);
         },
         disconnect => sub {
           my ( $conn, $code, $reason ) = @_;
-          printDebug('---------->onConnect:disconnect START<--------------');
-          printInfo( 'Websocket remotely disconnected from '
+          printDebug('---------->onConnect:disconnect START<--------------',2);
+          printDebug( 'Websocket remotely disconnected from '
               . $conn->ip()
-              . getConnFields($conn) );
+              . getConnFields($conn),1 );
           foreach (@active_connections) {
             if ( ( exists $_->{conn} )
               && ( $_->{conn}->ip() eq $conn->ip() )
@@ -3578,29 +3595,29 @@ sub initSocketServer {
               # not present
               if ( $_->{token} eq '' ) {
                 $_->{state} = PENDING_DELETE;
-                printInfo( 'Marking '
+                printDebug( 'Marking '
                     . $conn->ip()
                     . getConnFields($conn)
-                    . " for deletion as websocket closed remotely\n" );
+                    . " for deletion as websocket closed remotely\n" ,1);
               }
               else {
 
-                printInfo( 'Invaliding websocket, but NOT Marking '
+                printDebug( 'Invaliding websocket, but NOT Marking '
                     . $conn->ip()
                     . getConnFields($conn)
                     . ' for deletion as token '
                     . $_->{token}
-                    . " active\n" );
+                    . " active\n",1 );
                 $_->{state} = INVALID_CONNECTION;
               }
             }
 
           }
-          printDebug('---------->onConnect:disconnect END<--------------');
+          printDebug('---------->onConnect:disconnect END<--------------',2);
         },
       );
 
-      printDebug('---------->onConnect STOP<--------------');
+      printDebug('---------->onConnect STOP<--------------',2);
     }
   );
 

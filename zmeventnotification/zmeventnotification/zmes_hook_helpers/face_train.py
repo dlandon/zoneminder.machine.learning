@@ -72,7 +72,7 @@ def train():
                         if len(face_locations) != 1:
                             g.logger.error(
                                 'File {} has {} faces, cannot use for training. We need exactly 1 face. If you think you have only 1 face try using "cnn" for training mode. Ignoring...'
-                                .format(person), len(face_locations))
+                               .format(person, len(face_locations)))
                         else:
                             face_encodings = face_recognition.face_encodings(
                                 known_face,
@@ -116,7 +116,7 @@ def train():
             'No known faces found to train, encoding file not created')
     else:
         n_neighbors = int(round(math.sqrt(len(known_face_names))))
-        g.logger.debug('Using n_neighbors to be: {}'.format(n_neighbors))
+        g.logger.debug('Using n_neighbors to be: {}'.format(n_neighbors),level=2)
         knn = neighbors.KNeighborsClassifier(n_neighbors=n_neighbors,
                                              algorithm=knn_algo,
                                              weights='distance')

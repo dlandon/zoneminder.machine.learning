@@ -9,13 +9,15 @@ import requests
 import time
 import os
 import traceback
+import urllib.parse
 # Generic image related algorithms
 
 
 def createAnimation(frametype, eid,fname, types):
     import imageio
-    url = '{}/index.php?view=image&width={}&eid={}&username={}&password={}'.format(g.config['portal'],g.config['animation_width'],eid,g.config['user'],g.config['password'])
-    api_url = '{}/events/{}.json?username={}&password={}'.format(g.config['api_portal'],eid,g.config['user'],g.config['password'])
+
+    url = '{}/index.php?view=image&width={}&eid={}&username={}&password={}'.format(g.config['portal'],g.config['animation_width'],eid,g.config['user'],urllib.parse.quote(g.config['password'], safe=''))
+    api_url = '{}/events/{}.json?username={}&password={}'.format(g.config['api_portal'],eid,g.config['user'],urllib.parse.quote(g.config['password'], safe=''))
     disp_api_url='{}/events/{}.json?username={}&password=***'.format(g.config['api_portal'],eid,g.config['user'])
 
     rtries = g.config['animation_max_tries']
@@ -80,13 +82,14 @@ def createAnimation(frametype, eid,fname, types):
     end_frame = int(min(totframes, fid + (buffer_seconds*fps)))
     skip =round(fps/target_fps)
 
-    g.logger.debug (f'animation: anchor={fid} start={start_frame} end={end_frame} skip={skip}')
+    g.logger.debug (f'animation: anchor={frametype} start={start_frame} end={end_frame} skip={skip}')
     g.logger.debug('animation: Grabbing frames...')
     images = []
     od_images = []
 
-    od_url= '{}/index.php?view=image&eid={}&fid={}&username={}&password={}&width={}'.format(g.config['portal'],eid,fid,g.config['user'],g.config['password'],g.config['animation_width'])
-    g.logger.debug (f'Grabbing anchor frame: {fid}...')
+    # use frametype  (alarm/snapshot) to get od anchor, because fid can be wrong when translating from videos
+    od_url= '{}/index.php?view=image&eid={}&fid={}&username={}&password={}&width={}'.format(g.config['portal'],eid,frametype,g.config['user'],urllib.parse.quote(g.config['password'], safe=''),g.config['animation_width'])
+    g.logger.debug (f'Grabbing anchor frame: {frametype}...')
     try:
         od_frame = imageio.imread(od_url)
         # 1 second @ 2fps
@@ -97,7 +100,7 @@ def createAnimation(frametype, eid,fname, types):
 
     for i in range(start_frame, end_frame+1, skip):
         p_url=url+'&fid={}'.format(i)
-        #g.logger.debug (f'animation: Grabbing Frame:{i}')
+        g.logger.debug (f'animation: Grabbing Frame:{i}',level=2)
         try:
             images.append(imageio.imread(p_url))
         except Exception as e:
@@ -158,7 +161,7 @@ def processPastDetection(bbox, label, conf, mid):
             'Monitor ID not specified, cannot match past detections')
         return bbox, label, conf
     mon_file = g.config['image_path'] + '/monitor-' + mid + '-data.pkl'
-    g.logger.debug('trying to load ' + mon_file)
+    g.logger.debug('trying to load ' + mon_file,level=2)
     try:
         fh = open(mon_file, "rb")
         saved_bs = pickle.load(fh)
@@ -263,14 +266,14 @@ def processFilters(bbox, label, conf, match):
         #g.logger.debug ("BEFORE INSERT: {}".format(b))
         b.insert(1, (b[1][0], b[0][1]))
         b.insert(3, (b[0][0], b[2][1]))
-        g.logger.debug("intersection: polygon in process={}".format(b))
+        g.logger.debug("intersection: polygon in process={}".format(b),level=2)
         obj = Polygon(b)
         for p in g.polygons:
             poly = Polygon(p['value'])
             if obj.intersects(poly):
                 if label[idx] in match:
                     g.logger.debug('{} intersects object:{}[{}]'.format(
-                        p['name'], label[idx], b))
+                        p['name'], label[idx], b),level=2)
                     new_label.append(label[idx])
                     new_bbox.append(old_b)
                     new_conf.append(conf[idx])
@@ -336,6 +339,7 @@ def getValidPlateDetections(bbox, label, conf):
             poly = Polygon(p['value'])
             # Lets make sure the license plate doesn't cover the full polygon area
             # if it did, its very likey a bogus reading
+
             if obj.intersects(poly):
                 res = 'Plate:{} at {} intersects polygon:{} at {} '.format(
                     label[idx], obj, p['name'], poly)
@@ -347,7 +351,7 @@ def getValidPlateDetections(bbox, label, conf):
                     doesIntersect = True
                 else:
                     res = res + 'but also contains polygon, assuming it to be INVALID'
-                g.logger.debug(res)
+                    g.logger.debug(res, level=2)
                 if doesIntersect: break
         # out of poly loop
         if not doesIntersect:

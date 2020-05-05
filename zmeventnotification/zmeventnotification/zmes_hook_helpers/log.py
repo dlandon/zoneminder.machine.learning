@@ -10,10 +10,10 @@ class wrapperLogger():
         zmlog.init(name=name, override=override)
         self.dump_console = dump_console
 
-    def debug(self, msg):
+    def debug(self, msg, level=1):
         idx = min(len(stack()), 1)
         caller = getframeinfo(stack()[idx][0])
-        zmlog.Debug(1, msg, caller)
+        zmlog.Debug(level, msg, caller)
         if (self.dump_console):
             print('CONSOLE:' + msg)
 
@@ -28,6 +28,13 @@ class wrapperLogger():
         idx = min(len(stack()), 1)
         caller = getframeinfo(stack()[idx][0])
         zmlog.Error(msg, caller)
+        if (self.dump_console):
+            print('CONSOLE:' + msg)
+
+    def fatal(self, msg):
+        idx = min(len(stack()), 1)
+        caller = getframeinfo(stack()[idx][0])
+        zmlog.Fatal(msg, caller)
         if (self.dump_console):
             print('CONSOLE:' + msg)
 
