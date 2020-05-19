@@ -1,6 +1,6 @@
-FROM phusion/baseimage:0.11
+FROM phusion/baseimage:master
 
-LABEL maintainer="dlandon"
+LABEL maintainer="bancey"
 
 ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
 	DEBIAN_FRONTEND="noninteractive" \
