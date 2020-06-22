@@ -64,7 +64,7 @@ if ( !try_use('JSON') ) {
 #
 # ==========================================================================
 
-my $app_version = '5.13-Docker';
+my $app_version = '5.15-Docker';
 
 # ==========================================================================
 #
@@ -86,6 +86,7 @@ use constant {
   DEFAULT_FCM_ENABLE         => 'yes',
   DEFAULT_MQTT_ENABLE        => 'no',
   DEFAULT_MQTT_SERVER        => '127.0.0.1',
+  DEFAULT_MQTT_TOPIC         => 'zoneminder',
   DEFAULT_MQTT_TICK_INTERVAL => 15,
   DEFAULT_MQTT_RETAIN        => 'no',
   DEFAULT_FCM_TOKEN_FILE     => '/var/lib/zmeventnotification/push/tokens.txt',
@@ -171,6 +172,7 @@ my $auth_timeout;
 
 my $use_mqtt;
 my $mqtt_server;
+my $mqtt_topic;
 my $mqtt_username;
 my $mqtt_password;
 my $mqtt_tick_interval;
@@ -202,6 +204,8 @@ my $send_event_end_notification;
 my $use_hooks;
 my $event_start_hook;
 my $event_end_hook;
+my $event_start_hook_notify_userscript;
+my $event_end_hook_notify_userscript;
 
 my $event_start_notify_on_hook_fail;
 my $event_start_notify_on_hook_success;
@@ -449,6 +453,8 @@ sub loadEsConfigSettings {
   $use_mqtt = config_get_val( $config, 'mqtt', 'enable', DEFAULT_MQTT_ENABLE );
   $mqtt_server =
     config_get_val( $config, 'mqtt', 'server', DEFAULT_MQTT_SERVER );
+  $mqtt_topic =
+    config_get_val( $config, 'mqtt', 'topic', DEFAULT_MQTT_TOPIC );
   $mqtt_username = config_get_val( $config, 'mqtt', 'username' );
   $mqtt_password = config_get_val( $config, 'mqtt', 'password' );
   $mqtt_tick_interval =
@@ -513,6 +519,8 @@ sub loadEsConfigSettings {
     config_get_val( $config, 'customize', 'use_hooks', DEFAULT_USE_HOOKS );
 
   $event_start_hook = config_get_val( $config, 'hook', 'event_start_hook' );
+  $event_start_hook_notify_userscript = config_get_val( $config, 'hook', 'event_start_hook_notify_userscript' );
+  $event_end_hook_notify_userscript = config_get_val( $config, 'hook', 'event_end_hook_notify_userscript' );
 
   # backward compatibility
   $event_start_hook = config_get_val( $config, 'hook', 'hook_script' )
@@ -622,6 +630,7 @@ Token file ........................... ${\(value_or_undefined($token_file))}
 
 Use MQTT ............................. ${\(yes_or_no($use_mqtt))}
 MQTT Server .......................... ${\(value_or_undefined($mqtt_server))}
+MQTT Topic ........................... ${\(value_or_undefined($mqtt_topic))}
 MQTT Username ........................ ${\(value_or_undefined($mqtt_username))}
 MQTT Password ........................ ${\(present_or_not($mqtt_password))}
 MQTT Retain .......................... ${\(yes_or_no($mqtt_retain))}
@@ -640,7 +649,9 @@ Send event end notification............${\(yes_or_no($send_event_end_notificatio
 
 Use Hooks............................. ${\(yes_or_no($use_hooks))}
 Hook Script on Event Start ........... ${\(value_or_undefined($event_start_hook))}
+User Script on Event Start.............${\(value_or_undefined($event_start_hook_notify_userscript))}
 Hook Script on Event End.............. ${\(value_or_undefined($event_end_hook))}
+User Script on Event End.............${\(value_or_undefined($event_end_hook_notify_userscript))}
 Hook Skipped monitors................. ${\(value_or_undefined($hook_skip_monitors))}
 
 Notify on Event Start (hook success).. ${\(value_or_undefined($event_start_notify_on_hook_success))}
@@ -1565,7 +1576,7 @@ sub sendOverMQTTBroker {
   );
 
   printDebug( 'requesting MQTT Publishing Job for EID:' . $alarm->{EventId} ,2);
-  my $topic = join( '/', 'zoneminder', $alarm->{MonitorId} );
+  my $topic = join( '/', $mqtt_topic, $alarm->{MonitorId} );
 
   # Net:MQTT:Simple does not appear to be thread/fork safe so send message to
   # parent process via pipe to create a mqtt_publish job.
@@ -3048,6 +3059,35 @@ sub processNewAlarmsInFork {
             "hook start returned with text:$resTxt json:$resJsonString exit:$hookResult",1
           );
 
+          if ($event_start_hook_notify_userscript) {
+            my $user_cmd =
+              $event_start_hook_notify_userscript . ' '
+            . $hookResult. ' '
+            . $eid . ' '
+            . $mid . ' '
+            . '"'.$alarm->{MonitorName} .'" '
+            . '"'.$resTxt.'" '
+            . '"'.$resJsonString.'" ';
+
+
+            if ($hook_pass_image_path) {
+              my $event = new ZoneMinder::Event($eid);
+              $user_cmd = $user_cmd . ' "' . $event->Path() . '"';
+              printDebug( 'Adding event path:'
+                  . $event->Path()
+                  . ' to $user_cmd for image location' ,1);
+
+            }
+
+            if ( $user_cmd =~ /^(.*)$/ ) {
+              $user_cmd = $1;
+            }
+            printDebug ("invoking user start notification script $user_cmd",1);
+            my $user_res = `$user_cmd`;
+          } # user notify script
+          
+          
+
           if ( $use_hook_description && $hookResult == 0 ) {
 
        # lets append it to any existing motion notes
@@ -3237,6 +3277,34 @@ sub processNewAlarmsInFork {
           #$alarm->{End}->{Cause}         = $resTxt . ' ' . $alarm->{Cause};
           $alarm->{End}->{Cause}         = $resTxt;
           $alarm->{End}->{DetectionJson} = decode_json($resJsonString);
+
+
+
+          if ($event_end_hook_notify_userscript) {
+            my $user_cmd =
+              $event_end_hook_notify_userscript . ' '
+            . $hookResult. ' '
+            . $eid . ' '
+            . $mid . ' '
+            . '"'.$alarm->{MonitorName} .'" '
+            . '"'.$resTxt.'" '
+            . '"'.$resJsonString.'" ';
+
+            if ($hook_pass_image_path) {
+              my $event = new ZoneMinder::Event($eid);
+              $user_cmd = $user_cmd . ' "' . $event->Path() . '"';
+              printDebug( 'Adding event path:'
+                  . $event->Path()
+                  . ' to $user_cmd for image location' ,2);
+
+            }
+
+            if ( $user_cmd =~ /^(.*)$/ ) {
+              $user_cmd = $1;
+            }
+            printDebug ("invoking user end notification script $user_cmd",1);
+            my $user_res = `$user_cmd`;
+          } # user notify script
 
         }
         else {

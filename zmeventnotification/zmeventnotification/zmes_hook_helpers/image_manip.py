@@ -168,8 +168,21 @@ def processPastDetection(bbox, label, conf, mid):
         saved_ls = pickle.load(fh)
         saved_cs = pickle.load(fh)
     except FileNotFoundError:
-        g.logger.debug('No history data file found for monitor {}'.format(mid))
+        g.logger.debug('No history data file found for monitor {}'.format(mid), level=1)
         return bbox, label, conf
+    except EOFError:
+        g.logger.debug('Empty file found for monitor {}'.format(mid), level=1)
+        g.logger.debug ('Going to remove {}'.format(mon_file), level=1)
+        try:
+            os.remove(mon_file)
+        except Exception as e:
+            g.logger.error (f'Could not delete: {e}')
+            pass
+    except Exception as e:
+        g.logger.error(f'Error in processPastDetection: {e}')
+        #g.logger.error('Traceback:{}'.format(traceback.format_exc()))
+        return bbox, label, conf
+
     # load past detection
 
     m = re.match('(\d+)(px|%)?$', g.config['past_det_max_diff_area'],
@@ -203,7 +216,7 @@ def processPastDetection(bbox, label, conf, mid):
         b = list(zip(it, it))
 
         b.insert(1, (b[1][0], b[0][1]))
-        b.insert(3, (b[0][0], b[1][1]))
+        b.insert(3, (b[0][0], b[2][1]))
         #g.logger.debug ("Past detection: {}@{}".format(saved_ls[idx],b))
         #g.logger.debug ('BOBK={}'.format(b))
         obj = Polygon(b)
@@ -214,7 +227,7 @@ def processPastDetection(bbox, label, conf, mid):
             it = iter(saved_b)
             saved_b = list(zip(it, it))
             saved_b.insert(1, (saved_b[1][0], saved_b[0][1]))
-            saved_b.insert(3, (saved_b[0][0], saved_b[1][1]))
+            saved_b.insert(3, (saved_b[0][0], saved_b[2][1]))
             saved_obj = Polygon(saved_b)
             max_diff_pixels = max_diff_area
 

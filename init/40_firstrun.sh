@@ -87,13 +87,23 @@ if [ ! -f /config/opencv/opencv_ok ]; then
 	echo "no" > /config/opencv/opencv_ok
 fi
 
-# Handle the zmeventnotification.pl & daemon files
+# Handle the zmeventnotification.pl
 if [ -f /root/zmeventnotification/zmeventnotification.pl ]; then
 	echo "Moving the event notification server"
 	mv /root/zmeventnotification/zmeventnotification.pl /usr/bin
 	chmod +x /usr/bin/zmeventnotification.pl 2>/dev/null
 else
 	echo "Event notification server already moved"
+fi
+
+# Handle the pushapi_pushover.py
+if [ -f /root/zmeventnotification/pushapi_pushover.py ]; then
+	echo "Moving the pushover api"
+	mkdir -p /var/lib/zmeventnotification/bin/
+	mv /root/zmeventnotification/pushapi_pushover.py /var/lib/zmeventnotification/bin/
+	chmod +x /var/lib/zmeventnotification/bin/pushapi_pushover.py 2>/dev/null
+else
+	echo "Pushover api already moved"
 fi
 
 # Show version of ES
@@ -181,7 +191,7 @@ chmod 777 /config/conf
 chmod 666 /config/conf/*
 chown -R $PUID:$PGID /config/control
 chmod 777 /config/control
-chmod 666 /config/control/*
+chmod 666 -R /config/control/
 chown -R $PUID:$PGID /config/ssmtp
 chmod -R 777 /config/ssmtp
 chown -R $PUID:$PGID /config/zmeventnotification.*

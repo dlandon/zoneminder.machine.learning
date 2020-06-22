@@ -55,7 +55,8 @@ def str_split(my_str):
 
 
 # Imports zone definitions from ZM
-def import_zm_zones(mid):
+def import_zm_zones(mid, reason):
+    match_reason = True if g.config['only_triggered_zm_zones']=='yes' else False
     url = g.config['portal'] + '/api/zones/forMonitor/' + mid + '.json'
     g.logger.debug('Getting ZM zones using {}?user=xxx&pass=yyy'.format(url),level=2)
     url = url + '?user=' + g.config['user']
@@ -85,13 +86,29 @@ def import_zm_zones(mid):
 
     c = input_file.read()
     j = json.loads(c)
+
+    # Now lets look at reason to see if we need to 
+    # honor ZM motion zones
+
+    reason_zones = []
+    if match_reason and reason and 'Motion:' in reason:
+        rz = reason.split('Motion:')
+        if len(rz) > 1:
+            rz = rz[1]
+            reason_zones = [x.strip() for x in rz.split(',')]
+            g.logger.debug('Found motion zones provided in alarm cause: {}'.format(reason_zones))
+
+
     for item in j['zones']:
-        g.polygons.append({
-            'name': item['Zone']['Name'],
-            'value': str2tuple(item['Zone']['Coords'])
-        })
-        g.logger.debug('importing zoneminder polygon: {} [{}]'.format(
-            item['Zone']['Name'], item['Zone']['Coords']))
+        if not match_reason or 'All' in reason_zones or item['Zone']['Name'] in reason_zones:
+            g.polygons.append({
+                'name': item['Zone']['Name'],
+                'value': str2tuple(item['Zone']['Coords'])
+            })
+            g.logger.debug('importing zoneminder polygon: {} [{}]'.format(
+                item['Zone']['Name'], item['Zone']['Coords']), level=2)
+        else:
+            g.logger.debug('dropping {} as zones in alarm cause is {}'.format(item['Zone']['Name'], reason_zones))
 
 
 # downloaded ZM image files for future analysis
@@ -148,6 +165,7 @@ def download_files(args):
             raise
         with open(filename1, 'wb') as output_file:
             output_file.write(input_file.read())
+            output_file.close()
 
         url = g.config['portal'] + '/index.php?view=image&eid=' + args.get(
             'eventid') + '&fid=snapshot'
@@ -166,6 +184,7 @@ def download_files(args):
             raise
         with open(filename2, 'wb') as output_file:
             output_file.write(input_file.read())
+            output_file.close()
 
     else:
         # only download one
@@ -188,7 +207,7 @@ def download_files(args):
         input_file = opener.open(url)
         with open(filename1, 'wb') as output_file:
             output_file.write(input_file.read())
-
+            output_file.close()
     return filename1, filename2, filename1_bbox, filename2_bbox
 
 def get_pyzm_config(args):
@@ -309,13 +328,17 @@ def process_config(args, ctx):
                                                     g.config_vals[k]['type'])
                     else:
                         # This means its a polygon for the monitor
-                        g.polygons.append({'name': k, 'value': str2tuple(v)})
-                        g.logger.debug('adding polygon: {} [{}]'.format(k, v),level=2)
-
+                        if not g.config['only_triggered_zm_zones']:
+                            g.polygons.append({'name': k, 'value': str2tuple(v)})
+                            g.logger.debug('adding polygon: {} [{}]'.format(k, v),level=2)
+                        else:
+                            g.logger.debug ('ignoring polygon: {} as only_triggered_zm_zones is true'.format(k), level=2)
             # now import zones if needed
             # this should be done irrespective of a monitor section
+            if g.config['only_triggered_zm_zones']:
+                g.config['import_zm_zones'] = 'yes'
             if g.config['import_zm_zones'] == 'yes':
-                import_zm_zones(args.get('monitorid'))
+                import_zm_zones(args.get('monitorid'), args.get('reason'))
 
         else:
             g.logger.info(

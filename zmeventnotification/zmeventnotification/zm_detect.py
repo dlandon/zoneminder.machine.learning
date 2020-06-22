@@ -87,6 +87,7 @@ def remote_detect(image, model=None):
                 'time': time.time()
             }
             json.dump(wdata, json_file)
+            json_file.close()
 
     auth_header = {'Authorization': 'Bearer ' + access_token}
     ret, jpeg = cv2.imencode('.jpg', image)
@@ -142,6 +143,9 @@ ap.add_argument('-o', '--output-path',
 ap.add_argument('-f',
                 '--file',
                 help='internal testing use only - skips event download')
+
+
+ap.add_argument('-r', '--reason', help='reason for event (notes field in ZM)')
 
 args, u = ap.parse_known_args()
 args = vars(args)
@@ -253,7 +257,7 @@ if filename2:  # may be none
             'Error reading file {}. It either does not exist or is invalid'.
             format(filename2))
 # create a scaled polygon for object intersection checks
-if not g.polygons:
+if not g.polygons and g.config['only_triggered_zm_zones'] == 'no':
     g.polygons.append({
         'name': 'full_image',
         'value': [(0, 0), (oldw, 0), (oldw, oldh), (0, oldh)]
@@ -649,9 +653,29 @@ else:
         #image = image2
         bbox_f = filename2_bbox
 
-    #for idx, b in enumerate(bbox):
-    #g.logger.debug ("DRAWING {}".format(b))
+   
+    # let's remove past detections first, if enabled 
+    if g.config['match_past_detections'] == 'yes' and args.get('monitorid'):
+        # point detections to post processed data set
+        g.logger.info('Removing matches to past detections')
+        bbox_t, label_t, conf_t = img.processPastDetection(
+            bbox, label, conf, args.get('monitorid'))
+        # save current objects for future comparisons
+        g.logger.debug(
+            'Saving detections for monitor {} for future match'.format(
+                args.get('monitorid')))
+        mon_file = g.config['image_path'] + '/monitor-' + args.get(
+            'monitorid') + '-data.pkl'
+        f = open(mon_file, "wb")
+        pickle.dump(bbox, f)
+        pickle.dump(label, f)
+        pickle.dump(conf, f)
+        bbox = bbox_t
+        label = label_t
+        conf = conf_t
+        f.close()
 
+    # now we draw boxes
     out = img.draw_bbox(image, bbox, label, classes, conf, None,
                         g.config['show_percent'] == 'yes')
     image = out
@@ -672,27 +696,6 @@ else:
             'Writing out debug bounding box image to {}...'.format(bbox_f))
         cv2.imwrite(bbox_f, image)
 
-    
-
-    if g.config['match_past_detections'] == 'yes' and args.get('monitorid'):
-        # point detections to post processed data set
-        g.logger.info('Removing matches to past detections')
-        bbox_t, label_t, conf_t = img.processPastDetection(
-            bbox, label, conf, args.get('monitorid'))
-        # save current objects for future comparisons
-        g.logger.debug(
-            'Saving detections for monitor {} for future match'.format(
-                args.get('monitorid')))
-        mon_file = g.config['image_path'] + '/monitor-' + args.get(
-            'monitorid') + '-data.pkl'
-        f = open(mon_file, "wb")
-        pickle.dump(bbox, f)
-        pickle.dump(label, f)
-        pickle.dump(conf, f)
-        bbox = bbox_t
-        label = label_t
-        conf = conf_t
-    
     # Do this after match past detections so we don't create an objdetect if images were discarded
     if g.config['write_image_to_zm'] == 'yes':
         if (args.get('eventpath') and len(bbox)):
@@ -705,6 +708,7 @@ else:
             try:
                 with open(jf, 'w') as jo:
                     json.dump(final_json, jo)
+                    jo.close()
             except Exception as e:
                 g.logger.error(f'Error creating {jf}:{e}')
                 
