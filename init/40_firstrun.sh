@@ -448,6 +448,11 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	ln -sf /config/hook/known_faces /var/lib/zmeventnotification/known_faces
 	chown -R www-data:www-data /var/lib/zmeventnotification/known_faces
 
+	# Symbolic link for unknown_faces in /config
+	rm -rf /var/lib/zmeventnotification/unknown_faces
+	ln -sf /config/hook/unknown_faces /var/lib/zmeventnotification/unknown_faces
+	chown -R www-data:www-data /var/lib/zmeventnotification/unknown_faces
+
 	# Symbolic link for hook files in /config
 	mkdir -p /var/lib/zmeventnotification/bin
 	ln -sf /config/hook/zm_detect.py /var/lib/zmeventnotification/bin/zm_detect.py
