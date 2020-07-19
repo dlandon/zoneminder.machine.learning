@@ -1,4 +1,4 @@
-FROM phusion/baseimage:bionic.1.0.0
+FROM phusion/baseimage:bionic-1.0.0
 
 LABEL maintainer="dlandon"
 
