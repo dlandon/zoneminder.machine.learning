@@ -13,6 +13,7 @@ import time
 import re
 import ast
 import urllib.parse
+import traceback
 
 from configparser import ConfigParser
 import zmes_hook_helpers.common_params as g
@@ -58,8 +59,10 @@ def str_split(my_str):
 def import_zm_zones(mid, reason):
     match_reason = True if g.config['only_triggered_zm_zones']=='yes' else False
     url = g.config['portal'] + '/api/zones/forMonitor/' + mid + '.json'
-    g.logger.debug('Getting ZM zones using {}?user=xxx&pass=yyy'.format(url),level=2)
-    url = url + '?user=' + g.config['user']
+    g.logger.debug('Getting ZM zones using {}?username=xxx&password=yyy&user=xxx&pass=yyy'.format(url),level=2)
+    url = url + '?username=' + g.config['user']
+    url = url + '&password=' + urllib.parse.quote(g.config['password'], safe='')
+    url = url + '&user=' + g.config['user']
     url = url + '&pass=' + urllib.parse.quote(g.config['password'], safe='')
 
     if g.config['portal'].lower().startswith('https://'):
@@ -81,7 +84,10 @@ def import_zm_zones(mid, reason):
     try:
         input_file = opener.open(url)
     except HTTPError as e:
-        g.logger.error(e)
+        g.logger.error(f'HTTP Error in import_zm_zones:{e}')
+        raise
+    except Exception as e:
+        g.logger.error(f'General error in import_zm_zones:{e}')
         raise
 
     c = input_file.read()
@@ -328,14 +334,14 @@ def process_config(args, ctx):
                                                     g.config_vals[k]['type'])
                     else:
                         # This means its a polygon for the monitor
-                        if not g.config['only_triggered_zm_zones']:
+                        if not g.config['only_triggered_zm_zones'] == 'yes':
                             g.polygons.append({'name': k, 'value': str2tuple(v)})
                             g.logger.debug('adding polygon: {} [{}]'.format(k, v),level=2)
                         else:
                             g.logger.debug ('ignoring polygon: {} as only_triggered_zm_zones is true'.format(k), level=2)
             # now import zones if needed
             # this should be done irrespective of a monitor section
-            if g.config['only_triggered_zm_zones']:
+            if g.config['only_triggered_zm_zones'] == 'yes':
                 g.config['import_zm_zones'] = 'yes'
             if g.config['import_zm_zones'] == 'yes':
                 import_zm_zones(args.get('monitorid'), args.get('reason'))
@@ -347,6 +353,7 @@ def process_config(args, ctx):
     except Exception as e:
         g.logger.error('Error parsing config:{}'.format(args.get('config')))
         g.logger.error('Error was:{}'.format(e))
+        g.logger.fatal('error: Traceback:{}'.format(traceback.format_exc()))
         exit(0)
 
     # Now lets make sure we take care of parameter substitutions {{}}
