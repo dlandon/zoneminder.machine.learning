@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2020-08-12
+- Fix ES Yolo model download destination file names.
+- Create unknown_faces folder.
+
 ### 2020-08-11
 - Modify ES model downloads to the new paths and add Yolo V4.
 - Changed Yolo model download environment variables.

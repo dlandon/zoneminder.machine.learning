@@ -375,7 +375,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			mkdir -p /config/hook/models/tinyyolov3
 			wget https://pjreddie.com/media/files/yolov3-tiny.weights -O /config/hook/models/tinyyolov3/yolov3-tiny.weights
 			wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3-tiny.cfg -O /config/hook/models/tinyyolov3/yolov3-tiny.cfg
-			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolov3/yolov3-tiny.txt
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolov3/coco.names
 		else
 			echo "Tiny Yolo V3 files have already been downloaded, skipping..."
 		fi
@@ -386,7 +386,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			echo "Downloading yolo models and configurations..."
 			mkdir -p /config/hook/models/yolov3
 			wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg -O /config/hook/models/yolov3/yolov3.cfg
-			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov3/yolov3_classes.txt
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov3/coco.names
 			wget https://pjreddie.com/media/files/yolov3.weights -O /config/hook/models/yolov3/yolov3.weights
 		else
 			echo "Yolo V3 files have already been downloaded, skipping..."
@@ -399,7 +399,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			mkdir -p /config/hook/models/tinyyolov4
 			wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights -O /config/hook/models/tinyyolov4/yolov4-tiny.weights
 			wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4-tiny.cfg -O /config/hook/models/tinyyolov4/yolov4-tiny.cfg
-			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolov4/yolov4-tiny.txt
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolov4/coco.names
 		else
 			echo "Tiny Yolo V4 files have already been downloaded, skipping..."
 		fi
@@ -410,7 +410,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			echo "Downloading yolo models and configurations..."
 			mkdir -p /config/hook/models/yolov4
 			wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4.cfg -O /config/hook/models/yolov4/yolov4.cfg
-			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov4/yolov4_classes.txt
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov4/coco.nanes
 			wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights -O /config/hook/models/yolov4/yolov4.weights
 		else
 			echo "Yolo V4 files have already been downloaded, skipping..."
@@ -490,6 +490,12 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		if [ ! -d /config/hook/known_faces ]; then
 			echo "Creating hook/known_faces folder in config folder"
 			mkdir -p /config/hook/known_faces
+		fi
+
+		# Create unknown_faces folder if it doesn't exist
+		if [ ! -d /config/hook/unknown_faces ]; then
+			echo "Creating hook/unknown_faces folder in config folder"
+			mkdir -p /config/hook/unknown_faces
 		fi
 
 		# Install for face recognition
