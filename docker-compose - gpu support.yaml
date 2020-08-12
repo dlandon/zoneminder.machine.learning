@@ -17,8 +17,10 @@ services:
             - PGID=100
             - INSTALL_HOOK=0
             - INSTALL_FACE=0
-            - INSTALL_TINY_YOLO=0
-            - INSTALL_YOLO=0
+            - INSTALL_TINY_YOLOV3=0
+            - INSTALL_YOLOV3=0
+            - INSTALL_TINY_YOLOV4=0
+            - INSTALL_YOLOV4=0
             - MULTI_PORT_START=0
             - MULTI_PORT_END=0
         volumes:

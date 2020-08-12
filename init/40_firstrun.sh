@@ -369,19 +369,19 @@ if [ "$INSTALL_HOOK" == "1" ]; then
     rm -rf /root/zmeventnotification/zmes_hook_helpers
 
 	# Download models files
-	if [ "$INSTALL_TINY_YOLO" == "1" ]; then
-		if [ ! -d /config/hook/models/tinyyolo ]; then
+	if [ "$INSTALL_TINY_YOLOV3" == "1" ]; then
+		if [ ! -d /config/hook/models/tinyyolov3 ]; then
 			echo "Downloading tiny yolo models and configurations..."
-			mkdir -p /config/hook/models/tinyyolo
-			wget https://pjreddie.com/media/files/yolov3-tiny.weights -O /config/hook/models/tinyyolo/yolov3-tiny.weights
-			wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3-tiny.cfg -O /config/hook/models/tinyyolo/yolov3-tiny.cfg
-			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolo/yolov3-tiny.txt
+			mkdir -p /config/hook/models/tinyyolov3
+			wget https://pjreddie.com/media/files/yolov3-tiny.weights -O /config/hook/models/tinyyolov3/yolov3-tiny.weights
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3-tiny.cfg -O /config/hook/models/tinyyolov3/yolov3-tiny.cfg
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolov3/yolov3-tiny.txt
 		else
-			echo "Tiny Yolo files have already been downloaded, skipping..."
+			echo "Tiny Yolo V3 files have already been downloaded, skipping..."
 		fi
 	fi
 
-	if [ "$INSTALL_YOLO" == "1" ]; then
+	if [ "$INSTALL_YOLOV3" == "1" ]; then
 		if [ ! -d /config/hook/models/yolov3 ]; then
 			echo "Downloading yolo models and configurations..."
 			mkdir -p /config/hook/models/yolov3
@@ -389,10 +389,33 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov3/yolov3_classes.txt
 			wget https://pjreddie.com/media/files/yolov3.weights -O /config/hook/models/yolov3/yolov3.weights
 		else
-			echo "Yolo files have already been downloaded, skipping..."
+			echo "Yolo V3 files have already been downloaded, skipping..."
 	    fi
 	fi
 
+	if [ "$INSTALL_TINY_YOLOV4" == "1" ]; then
+		if [ ! -d /config/hook/models/tinyyolov4 ]; then
+			echo "Downloading tiny yolo models and configurations..."
+			mkdir -p /config/hook/models/tinyyolov4
+			wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights -O /config/hook/models/tinyyolov4/yolov4-tiny.weights
+			wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4-tiny.cfg -O /config/hook/models/tinyyolov4/yolov4-tiny.cfg
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/tinyyolov4/yolov4-tiny.txt
+		else
+			echo "Tiny Yolo V4 files have already been downloaded, skipping..."
+		fi
+	fi
+
+	if [ "$INSTALL_YOLOV4" == "1" ]; then
+		if [ ! -d /config/hook/models/yolov4 ]; then
+			echo "Downloading yolo models and configurations..."
+			mkdir -p /config/hook/models/yolov4
+			wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4.cfg -O /config/hook/models/yolov4/yolov4.cfg
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov4/yolov4_classes.txt
+			wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights -O /config/hook/models/yolov4/yolov4.weights
+		else
+			echo "Yolo V4 files have already been downloaded, skipping..."
+	    fi
+	fi
 	# Handle the objectconfig.ini file
 	if [ -f /root/zmeventnotification/objectconfig.ini ]; then
 		echo "Moving objectconfig.ini"

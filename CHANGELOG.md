@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2020-08-11
+- Modify ES model downloads to the new paths and add Yolo V4.
+- Changed Yolo model download environment variables.
+
 ### 2020-08-08
 - Update zmNinja Event Notification Server to version 5.15.6.
 
