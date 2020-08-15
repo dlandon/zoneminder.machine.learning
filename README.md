@@ -38,8 +38,10 @@ docker run -d --name="Zoneminder" \
 -e PGID="100" \
 -e INSTALL_HOOK="0" \
 -e INSTALL_FACE="0" \
--e INSTALL_TINY_YOLO="0" \
--e INSTALL_YOLO="0" \
+-e INSTALL_TINY_YOLOV3="0" \
+-e INSTALL_YOLOV3="0" \
+-e INSTALL_TINY_YOLOV4="0" \
+-e INSTALL_YOLOV4="0" \
 -e MULTI_PORT_START="0" \
 -e MULTI_PORT_END="0" \
 -v "/mnt/Zoneminder":"/config":rw \
@@ -60,8 +62,10 @@ You can start/stop/restart the container anytime. You don't need to run the comm
 
 - Set `INSTALL_HOOK="1"` to install the hook processing packages and run setup.py to prepare the hook processing.  The initial installation can take a long time.
 - Set `INSTALL_FACE="1"` to install face recognition packages.  The initial installation can take a long time.
-- Set `INSTALL_TINY_YOLO="1"` to install the tiny yolo hook processing files.
-- Set `INSTALL_YOLO="1"` to install the yolo hook processing files.
+- Set `INSTALL_TINY_YOLOV3="1"` to install the tiny yolo v3 hook processing files.
+- Set `INSTALL_YOLOV3="1"` to install the yolo v3 hook processing files.
+- Set `INSTALL_TINY_YOLOV4="1"` to install the tiny yolo v4 hook processing files.
+- Set `INSTALL_YOLOV4="1"` to install the yolo v4 hook processing files.
 - Set `MULTI_PORT_START` and `MULTI_PORT_END` to define a port range for ES multi-port operation.
 - The command above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data/event files/etc are kept here. You can change this to any directory in your host path that you want to.
 
