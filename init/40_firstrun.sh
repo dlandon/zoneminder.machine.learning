@@ -410,7 +410,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			echo "Downloading yolo models and configurations..."
 			mkdir -p /config/hook/models/yolov4
 			wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4.cfg -O /config/hook/models/yolov4/yolov4.cfg
-			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov4/coco.nanes
+			wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O /config/hook/models/yolov4/coco.names
 			wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights -O /config/hook/models/yolov4/yolov4.weights
 		else
 			echo "Yolo V4 files have already been downloaded, skipping..."
