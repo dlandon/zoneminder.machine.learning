@@ -10,6 +10,8 @@ class wrapperLogger():
         zmlog.init(name=name, override=override)
         self.dump_console = dump_console
 
+    
+
     def debug(self, msg, level=1):
         idx = min(len(stack()), 1)
         caller = getframeinfo(stack()[idx][0])
@@ -40,7 +42,8 @@ class wrapperLogger():
 
     def setLevel(self, level):
         pass
-
+    
+  
 
 def init(process_name=None, override={}, dump_console=False):
     g.logger = wrapperLogger(name=process_name, override=override, dump_console=dump_console)

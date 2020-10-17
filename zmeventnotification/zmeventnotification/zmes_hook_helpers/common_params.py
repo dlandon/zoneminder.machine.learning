@@ -8,6 +8,47 @@ polygons = []  # will contain mask(s) for a monitor
 
 # valid config keys and defaults
 config_vals = {
+    'version':{
+            'section': 'general',
+            'default': None,
+            'type': 'string',
+        },
+
+        'cpu_max_processes':{
+            'section': 'general',
+            'default': '1',
+            'type': 'int',
+        },
+        'gpu_max_processes':{
+            'section': 'general',
+            'default': '1',
+            'type': 'int',
+        },
+        'tpu_max_processes':{
+            'section': 'general',
+            'default': '1',
+            'type': 'int',
+        },
+
+        'cpu_max_lock_wait':{
+            'section': 'general',
+            'default': '120',
+            'type': 'int',
+        },
+
+        'gpu_max_lock_wait':{
+            'section': 'general',
+            'default': '120',
+            'type': 'int',
+        },
+        'tpu_max_lock_wait':{
+            'section': 'general',
+            'default': '120',
+            'type': 'int',
+        },
+
+
+        
         'secrets':{
             'section': 'general',
             'default': None,
@@ -59,11 +100,7 @@ config_vals = {
             'default': '/var/lib/zmeventnotification/images',
             'type': 'string'
         },
-        'detect_pattern':{
-            'section': 'general',
-            'default': '.*',
-            'type': 'string'
-        },
+        
         'match_past_detections':{
             'section': 'general',
             'default': 'no',
@@ -72,6 +109,11 @@ config_vals = {
         'past_det_max_diff_area':{
             'section': 'general',
             'default': '5%',
+            'type': 'string'
+        },
+        'max_detection_size':{
+            'section': 'general',
+            'default': '',
             'type': 'string'
         },
         'frame_id':{
@@ -120,9 +162,9 @@ config_vals = {
             'default': 'yes',
             'type': 'string'
         },
-        'models':{
+        'detection_sequence':{
             'section': 'general',
-            'default': 'yolo',
+            'default': 'object',
             'type': 'str_split'
         },
         'detection_mode': {
@@ -144,6 +186,11 @@ config_vals = {
             'section': 'general',
             'default': '(127,140,141)',
             'type': 'eval'
+        },
+        'poly_thickness':{
+            'section': 'general',
+            'default': '2',
+            'type': 'int'
         },
 
         # animation for push
@@ -173,84 +220,73 @@ config_vals = {
             'default': '3',
             'type': 'int'
         },
+        'fast_gif':{
+            'section': 'animation',
+            'default': 'no',
+            'type': 'string'
+        },
 
         # General ML
      
 
-         'use_opencv_dnn_cuda':{
-            'section':'ml',
-            'default':'no',
-            'type':'string'
-
-        },
-
         'ml_gateway': {
-            'section': 'ml',
+            'section': 'remote',
             'default': None,
             'type': 'string'
         },
 
         'ml_fallback_local': {
-            'section': 'ml',
+            'section': 'remote',
             'default': 'no',
             'type': 'string'
         },
        
         'ml_user': {
-            'section': 'ml',
+            'section': 'remote',
             'default': None,
             'type': 'string'
         },
         'ml_password': {
-            'section': 'ml',
+            'section': 'remote',
             'default': None,
             'type': 'string'
         },
        
-
-        # YOLO
-
-        
-
-        'yolo_type':{
-            'section':'yolo',
-            'default':'full',
-            'type':'string'
-
+       'object_detection_pattern':{
+            'section': 'object',
+            'default': '.*',
+            'type': 'string'
         },
-        'config':{
-            'section': 'yolo',
+       
+       'object_framework':{
+            'section': 'object',
+            'default': 'opencv',
+            'type': 'string'
+        },
+        'object_processor':{
+            'section': 'object',
+            'default': 'cpu',
+            'type': 'string'
+        },
+        'object_config':{
+            'section': 'object',
             'default': '/var/lib/zmeventnotification/models/yolov3/yolov3.cfg',
             'type': 'string'
         },
-        'weights':{
-            'section': 'yolo',
+        'object_weights':{
+            'section': 'object',
             'default': '/var/lib/zmeventnotification/models/yolov3/yolov3.weights',
             'type': 'string'
         },
-        'labels':{
-            'section': 'yolo',
+        'object_labels':{
+            'section': 'object',
             'default': '/var/lib/zmeventnotification/models/yolov3/yolov3_classes.txt',
             'type': 'string'
         },
-        'tiny_config':{
-            'section': 'yolo',
-            'default': '/var/lib/zmeventnotification/models/tinyyolo/yolov3-tiny.cfg',
-            'type': 'string'
-        },
-        'tiny_weights':{
-            'section': 'yolo',
-            'default': '/var/lib/zmeventnotification/models/tinyyolo/yolov3-tiny.weights',
-            'type': 'string'
-        },
-        'tiny_labels':{
-            'section': 'yolo',
-            'default': '/var/lib/zmeventnotification/models/tinyyolo/yolov3-tiny.txt',
-            'type': 'string'
-        },
+       
 
-        'yolo_min_confidence': {
-            'section': 'yolo',
+        'object_min_confidence': {
+            'section': 'object',
             'default': '0.4',
             'type': 'float'
         },
@@ -279,6 +315,21 @@ config_vals = {
         },
 
        # Face
+       'face_detection_pattern':{
+            'section': 'face',
+            'default': '.*',
+            'type': 'string'
+        },
+        'face_detection_framework':{
+            'section': 'face',
+            'default': 'dlib',
+            'type': 'string'
+        },
+        'face_recognition_framework':{
+            'section': 'face',
+            'default': 'dlib',
+            'type': 'string'
+        },
         'face_num_jitters':{
             'section': 'face',
             'default': '0',
@@ -342,6 +393,11 @@ config_vals = {
             'default': 'plate_recognizer',
             'type': 'string',
         },
+        'alpr_detection_pattern':{
+            'section': 'alpr',
+            'default': '.*',
+            'type': 'string'
+        },
         'alpr_url': {
             'section': 'alpr',
             'default': None,
@@ -356,12 +412,6 @@ config_vals = {
             'section': 'alpr',
             'type': 'string',
             'default': 'yes',
-        },
-
-         'alpr_pattern':{
-            'section': 'general',
-            'default': '.*',
-            'type': 'string'
         },
         'alpr_api_type':{
             'section': 'alpr',

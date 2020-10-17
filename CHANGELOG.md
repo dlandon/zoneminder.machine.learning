@@ -1,5 +1,8 @@
 ## Change Log
 
+### 2020-10-17
+- Update zmNinja Event Notification Server to version 6.0.4.
+
 ### 2020-08-12
 - Fix ES Yolo model download destination file names.
 - Create unknown_faces folder.

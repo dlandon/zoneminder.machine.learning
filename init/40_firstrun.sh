@@ -96,21 +96,6 @@ else
 	echo "Event notification server already moved"
 fi
 
-# Handle the pushapi_pushover.py
-if [ -f /root/zmeventnotification/pushapi_pushover.py ]; then
-	echo "Moving the pushover api"
-	mkdir -p /var/lib/zmeventnotification/bin/
-	mv /root/zmeventnotification/pushapi_pushover.py /var/lib/zmeventnotification/bin/
-	chmod +x /var/lib/zmeventnotification/bin/pushapi_pushover.py 2>/dev/null
-else
-	echo "Pushover api already moved"
-fi
-
-# Show version of ES
-if [ -f /usr/bin/zmeventnotification.pl ]; then
-	echo "Event Server version: `cat /usr/bin/zmeventnotification.pl | grep Docker | awk '{print $4}' | sed 's/;//'`."
-fi
-
 # Move ssmtp configuration if it doesn't exist
 if [ ! -d /config/ssmtp ]; then
 	echo "Moving ssmtp to config folder"
@@ -352,8 +337,6 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			echo "Creating hook folder in config folder"
 			mkdir /config/hook
 		fi
-		chown -R $PUID:$PGID /config/hook
-		chmod -R 777 /config/hook
 
 		# Python modules needed for hook processing
 		apt-get -y install python3-pip cmake
@@ -429,6 +412,16 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		echo "File objectconfig.ini already moved"
 	fi
 
+	# Handle the config_upgrade script
+	if [ -f /root/zmeventnotification/config_upgrade.py ]; then
+		echo "Moving config_upgrade.py"
+		mv /root/zmeventnotification/config_upgrade.py /config/hook/config_upgrade.py
+		mv /root/zmeventnotification/config_upgrade.sh /config/hook/config_upgrade.sh
+		chmod +x /config/hook/config_upgrade.*
+	else
+		echo "config_upgrade.py script not found"
+	fi
+
 	# Handle the zm_event_start.sh file
 	if [ -f /root/zmeventnotification/zm_event_start.sh ]; then
 		echo "Moving zm_event_start.sh"
@@ -502,6 +495,10 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		apt-get -y install libopenblas-dev liblapack-dev libblas-dev
  		pip3 install face_recognition
 	fi
+
+	# Set hook folder permissions
+	chown -R $PUID:$PGID /config/hook
+	chmod -R 777 /config/hook
 
 	echo "Hook installation completed"
 
