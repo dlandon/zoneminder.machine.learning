@@ -2,6 +2,13 @@
 #
 # 40_firstrun.sh
 #
+#
+# Github URL for opencv zip file download.
+# Current default is to pull the version 4.3.0 release.
+#
+OPENCV_VER=4.3.0
+OPENCV_URL=https://github.com/opencv/opencv/archive/$OPENCV_VER.zip
+OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/$OPENCV_VER.zip
 
 # Search for config files, if they don't exist, create the default ones
 if [ ! -d /config/conf ]; then
@@ -94,6 +101,16 @@ if [ -f /root/zmeventnotification/zmeventnotification.pl ]; then
 	chmod +x /usr/bin/zmeventnotification.pl 2>/dev/null
 else
 	echo "Event notification server already moved"
+fi
+
+# Handle the pushapi_pushover.py
+if [ -f /root/zmeventnotification/pushapi_pushover.py ]; then
+	echo "Moving the pushover api"
+	mkdir -p /var/lib/zmeventnotification/bin/
+	mv /root/zmeventnotification/pushapi_pushover.py /var/lib/zmeventnotification/bin/
+	chmod +x /var/lib/zmeventnotification/bin/pushapi_pushover.py 2>/dev/null
+else
+	echo "Pushover api already moved"
 fi
 
 # Move ssmtp configuration if it doesn't exist
@@ -344,12 +361,40 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		# pip3 will take care of installing dependent packages
 		pip3 install future
 		pip3 install /root/zmeventnotification
-		pip3 install opencv-contrib-python
-	else
-		pip3 uninstall -y zmes-hooks
-		pip3 install /root/zmeventnotification
+		#
+		# Compile opencv
+		#
+		echo "Compiling opencv..."
+		cd ~
+		wget -q -O opencv.zip $OPENCV_URL
+		wget -q -O opencv_contrib.zip $OPENCV_CONTRIB_URL
+		unzip opencv.zip
+		unzip opencv_contrib.zip
+		mv $(ls -d opencv-*) opencv
+		mv opencv_contrib-$OPENCV_VER opencv_contrib
+		rm *.zip
+
+		cd ~/opencv
+		mkdir build
+		cd build
+		cmake -D CMAKE_BUILD_TYPE=RELEASE \
+			-D CMAKE_INSTALL_PREFIX=/usr/local \
+			-D INSTALL_PYTHON_EXAMPLES=OFF \
+			-D INSTALL_C_EXAMPLES=OFF \
+			-D OPENCV_ENABLE_NONFREE=ON \
+			-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+			-D HAVE_opencv_python3=ON \
+			-D PYTHON_EXECUTABLE=/usr/bin/python3 \
+			-D PYTHON2_EXECUTABLE=/usr/bin/python2 \
+			-D BUILD_EXAMPLES=OFF .. >/config/opencv/cmake.log
+
+		echo "Installing opencv..."
+		make -j$(nproc)
+		make install
+		cd ~
+		rm -r opencv*
+	    rm -rf /root/zmeventnotification/zmes_hook_helpers
 	fi
-    rm -rf /root/zmeventnotification/zmes_hook_helpers
 
 	# Download models files
 	if [ "$INSTALL_TINY_YOLOV3" == "1" ]; then
@@ -469,6 +514,28 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	ln -sf /config/hook/unknown_faces /var/lib/zmeventnotification/unknown_faces
 	chown -R www-data:www-data /var/lib/zmeventnotification/unknown_faces
 
+	# Symbolic link for misc in /config
+	rm -rf /var/lib/zmeventnotification/misc
+	ln -sf /config/hook/misc /var/lib/zmeventnotification/misc
+	chown -R www-data:www-data /var/lib/zmeventnotification/misc
+
+	# Create misc folder if it doesn't exist
+	if [ ! -d /config/hook/misc ]; then
+		echo "Creating hook/misc folder in config folder"
+		mkdir -p /config/hook/misc
+	fi
+
+	# Symbolic link for coral_edgetpu in /config
+	rm -rf /var/lib/zmeventnotification/coral_edgetpu
+	ln -sf /config/hook/coral_edgetpu /var/lib/zmeventnotification/coral_edgetpu
+	chown -R www-data:www-data /var/lib/zmeventnotification/coral_edgetpu
+
+	# Create coral_edgetpu folder if it doesn't exist
+	if [ ! -d /config/hook/coral_edgetpu ]; then
+		echo "Creating hook/coral_edgetpu folder in config folder"
+		mkdir -p /config/hook/coral_edgetpu
+	fi
+
 	# Symbolic link for hook files in /config
 	mkdir -p /var/lib/zmeventnotification/bin
 	ln -sf /config/hook/zm_detect.py /var/lib/zmeventnotification/bin/zm_detect.py
@@ -479,6 +546,12 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	ln -sf /config/hook/objectconfig.ini /etc/zm/
 
 	if [ "$INSTALL_FACE" == "1" ] && [ -f /root/zmeventnotification/setup.py ]; then
+		# Create known_faces folder if it doesn't exist
+		if [ ! -d /config/hook/known_faces ]; then
+			echo "Creating hook/known_faces folder in config folder"
+			mkdir -p /config/hook/known_faces
+		fi
+
 		# Create known_faces folder if it doesn't exist
 		if [ ! -d /config/hook/known_faces ]; then
 			echo "Creating hook/known_faces folder in config folder"
