@@ -97,5 +97,5 @@ VOLUME \
 FROM build7 as build8
 EXPOSE 80 443 9000
 
-FROM build8 as build9
+FROM build8
 CMD ["/sbin/my_init"]
