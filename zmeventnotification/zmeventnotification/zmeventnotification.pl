@@ -43,7 +43,7 @@ use Symbol qw(qualify_to_ref);
 use IO::Select;
 
 ####################################
-my $app_version = '6.0.4';
+my $app_version = '6.0.5';
 ####################################
 
 # do this before any log init etc.
@@ -108,6 +108,7 @@ use constant {
   DEFAULT_AUTH_TIMEOUT       => 20,
   DEFAULT_FCM_ENABLE         => 'yes',
   DEFAULT_USE_FCMV1          => 'yes',
+  DEFAULT_REPLACE_PUSH_MSGS  => 'no',
   DEFAULT_MQTT_ENABLE        => 'no',
   DEFAULT_MQTT_SERVER        => '127.0.0.1',
   DEFAULT_MQTT_TOPIC         => 'zoneminder',
@@ -211,6 +212,7 @@ my $mqtt_last_tick_time = time();
 
 my $use_fcm;
 my $use_fcmv1;
+my $replace_push_messages;
 
 my $use_api_push;
 my $api_push_script;
@@ -511,6 +513,9 @@ sub loadEsConfigSettings {
 
   $use_fcm = config_get_val( $config, 'fcm', 'enable', DEFAULT_FCM_ENABLE );
   $use_fcmv1 = config_get_val( $config, 'fcm', 'use_fcmv1', DEFAULT_USE_FCMV1 );
+  $replace_push_messages = config_get_val( $config, 'fcm', 'replace_push_messages', DEFAULT_REPLACE_PUSH_MSGS );
+  
+
   $fcm_date_format =
     config_get_val( $config, 'fcm', 'date_format', DEFAULT_FCM_DATE_FORMAT );
 
@@ -698,6 +703,7 @@ API Push Script....................... ${\(value_or_undefined($api_push_script))
 Use FCM .............................. ${\(yes_or_no($use_fcm))}
 Use FCM V1 APIs....................... ${\(yes_or_no($use_fcmv1))}
 FCM Date Format....................... ${\(value_or_undefined($fcm_date_format))}
+Only show latest FCMv1 message........ ${\(yes_or_no($replace_push_messages))}
 Token file ........................... ${\(value_or_undefined($token_file))}
 
 Use MQTT ............................. ${\(yes_or_no($use_mqtt))}
@@ -1589,6 +1595,11 @@ sub validateAuth {
     $sth->finish();
 
     if ($state) {
+      if (substr($state->{Password},0,4) eq '-ZM-') {
+        printError("The password for $u has not been migrated in ZM. Please log into ZM with this username to migrate before using it with the ES. If that doesn't work, please configure a new user for the ES");
+        return 0;
+      }
+
       my $scheme = substr( $state->{Password}, 0, 1 );
       if ( $scheme eq '*' ) {    # mysql decode
         printDebug( 'Comparing using mysql hash', 2 );
@@ -1852,7 +1863,7 @@ sub sendOverFCMV1 {
   $title = $title . ' (' . $eid . ')' if ($tag_alarm_event_id);
   $title = 'Ended:' . $title          if ( $event_type eq 'event_end' );
 
-# https://firebase.google.com/docs/cloud-messaging/http-server-ref#notification-payload-support
+# https://firebase.google.com/docs/reference/admin/python/firebase_admin.messaging
 
   my $message_v2 = {
     token => $obj->{token},
@@ -1874,6 +1885,7 @@ sub sendOverFCMV1 {
       priority => 'high'
     };
 
+    $message_v2->{android}->{tag} = 'zmninjapush' if ($replace_push_messages);
     if (defined ($obj->{appversion}) && ($obj->{appversion} ne "unknown")) {
     printDebug ('setting channel to zmninja',2);
     $message_v2->{android}->{channel} = 'zmninja';
@@ -1895,7 +1907,9 @@ sub sendOverFCMV1 {
         'apns-push-type'=>'alert',
         #'apns-expiration'=>'0'
         }
-      }
+      };
+      $message_v2->{ios}->{headers}->{'apns-collapse-id'} = 'zmninjapush' if ($replace_push_messages);
+
 
   }
 
@@ -2571,6 +2585,7 @@ sub processIncomingMessage {
 
       my $token_matched = 0;
       my $stored_invocations = undef;
+      my $stored_last_sent = undef;
       foreach (@active_connections) {
 
         if ( $_->{token} eq $json_string->{data}->{token} ) {
@@ -2597,6 +2612,7 @@ sub processIncomingMessage {
             $_->{state} = PENDING_DELETE;
             # make sure loaded invocations are not erased
             $stored_invocations = $_->{invocations};
+            $stored_last_sent = $_->{last_sent};
             #print ("REMOVE saved:". Dumper($stored_invocations));
 
 
@@ -2608,6 +2624,8 @@ sub processIncomingMessage {
             #$_->{invocations} = $stored_invocations if (defined($stored_invocations));
             
             $_->{invocations} = $stored_invocations if (defined($stored_invocations));
+            $_->{last_sent} = $stored_last_sent if (defined($stored_last_sent));
+
             #print ("REMOVE applied:". Dumper($_->{invocations}));
 
             $_->{type}     = FCM;

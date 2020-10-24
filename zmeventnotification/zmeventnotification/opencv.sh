@@ -38,11 +38,12 @@ CUDA_VER=10.2
 #
 #
 # Github URL for opencv zip file download.
-# Current default is to pull the version 4.2.0 release.
+# Current default is to pull the version 4.3.0 release.
 #   Note: You shouldn't need to change these.
 #
-OPENCV_URL=https://github.com/opencv/opencv/archive/282fcb90dce76a55dc5f31246355fce2761a9eff.zip
-OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/4.2.0.zip
+OPENCV_VER=4.3.0
+OPENCV_URL=https://github.com/opencv/opencv/archive/$OPENCV_VER.zip
+OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/$OPENCV_VER.zip
 #
 # You can run this script in a quiet mode so it will run without any user interaction.
 #
@@ -246,7 +247,7 @@ wget -q -O opencv_contrib.zip $OPENCV_CONTRIB_URL
 unzip opencv.zip
 unzip opencv_contrib.zip
 mv $(ls -d opencv-*) opencv
-mv opencv_contrib-4.2.0 opencv_contrib
+mv opencv_contrib-$OPENCV_VER opencv_contrib
 rm *.zip
 
 cd ~/opencv

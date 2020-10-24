@@ -193,7 +193,7 @@ def main_handler():
     except ImportError as e:
         g.logger.Fatal (f'{e}: You might not have installed OpenCV as per install instructions. Remember, it is NOT automatically installed')
 
-    g.logger.Info('---------| hook version: {}, ES version: {} , OpenCV version: {}|------------'.format(__version__, es_version, cv2.__version__))
+    g.logger.Info('---------| pyzm version: {}, ES version: {} , OpenCV version: {}|------------'.format(__version__, es_version, cv2.__version__))
     if args.get('version'):
         print(__version__)
         exit(0)
@@ -275,7 +275,9 @@ def main_handler():
     if not g.polygons and g.config['only_triggered_zm_zones'] == 'no':
         g.polygons.append({
             'name': 'full_image',
-            'value': [(0, 0), (oldw, 0), (oldw, oldh), (0, oldh)]
+            'value': [(0, 0), (oldw, 0), (oldw, oldh), (0, oldh)],
+            'pattern': g.config.get('object_detection_pattern')
+
         })
         g.logger.Debug(1,
             'No polygon area specfied, so adding a full image polygon:{}'.format(
@@ -464,7 +466,7 @@ def main_handler():
                 '''
             # now filter these with polygon areas
             #g.logger.Debug (1,"INTERIM BOX = {} {}".format(b,l))
-            b, l, c = img.processFilters(b, l, c, match)
+            b, l, c = img.processFilters(b, l, c, match, model)
             if use_alpr:
                 vehicle_labels = ['car', 'motorbike', 'bus', 'truck', 'boat']
                 if not set(l).isdisjoint(vehicle_labels) or try_next_image:
