@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #
-# Script to compile opencv.
+# Script to compile opencv without gpu support.
 #
 #
 OPENCV_VER=4.3.0
@@ -10,6 +10,9 @@ OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/$OPENCV_VER.
 #
 # Compile opencv
 #
+
+logger "Compiling opencv without GPU Support" -tEventServer
+
 cd ~
 wget -q -O opencv.zip $OPENCV_URL
 wget -q -O opencv_contrib.zip $OPENCV_CONTRIB_URL
@@ -18,6 +21,8 @@ unzip opencv_contrib.zip
 mv $(ls -d opencv-*) opencv
 mv opencv_contrib-$OPENCV_VER opencv_contrib
 rm *.zip
+
+logger "Compiling opencv..." -tEventServer
 
 cd ~/opencv
 mkdir build
@@ -34,6 +39,10 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE \
 	-D BUILD_EXAMPLES=OFF .. >/dev/null
 
 make -j$(nproc)
+
+logger "Installing opencv..." -tEventServer
 make install
+
+logger "Cleaning up..." -tEventServer
 cd ~
 rm -r opencv*

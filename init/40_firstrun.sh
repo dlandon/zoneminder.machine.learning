@@ -353,18 +353,11 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 
 		# Python modules needed for hook processing
 		apt-get -y install python3-pip cmake
+		apt-get -y install libopenblas-dev liblapack-dev libblas-dev
 
 		# pip3 will take care of installing dependent packages
 		pip3 install future
 		pip3 install /root/zmeventnotification
-
-
-		# Compile opencv
-		if [ ! -f /root/openccv_compile.sh ]; then
-			echo "Compiling opencv - this will take a while..."
-			chmod +x /root/opencv_compile.sh
-			/root/opencv_compile.sh > /dev/null
-		fi
 
 		cd ~
 	    rm -rf /root/zmeventnotification/zmes_hook_helpers
@@ -418,6 +411,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 			echo "Yolo V4 files have already been downloaded, skipping..."
 	    fi
 	fi
+
 	# Handle the objectconfig.ini file
 	if [ -f /root/zmeventnotification/objectconfig.ini ]; then
 		echo "Moving objectconfig.ini"
@@ -539,7 +533,6 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		fi
 
 		# Install for face recognition
-		apt-get -y install libopenblas-dev liblapack-dev libblas-dev
  		pip3 install face_recognition
 	fi
 
@@ -549,12 +542,18 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 
 	echo "Hook installation completed"
 
-	# compile opencv
-	if [ ! -f /root/setup.py ]; then
-		if [ `cat /config/opencv/opencv_ok` = 'yes' ]; then
+	# Compile opencv
+	echo "Compiling opencv - this will take a while..."
+	if [ -f /config/opencv/opencv_ok ] && [ `cat /config/opencv/opencv_ok` = 'yes' ]; then
+		if [ ! -f /root/setup.py ]; then
 			if [ -x /config/opencv/opencv.sh ]; then
-				/config/opencv/opencv.sh quiet >/dev/null &
+				/config/opencv/opencv.sh quiet >/dev/null
 			fi
+		fi
+	else
+		if [ -f /root/opencv_compile.sh ]; then
+			chmod +x /root/opencv_compile.sh
+			/root/opencv_compile.sh >/dev/null
 		fi
 	fi
 
