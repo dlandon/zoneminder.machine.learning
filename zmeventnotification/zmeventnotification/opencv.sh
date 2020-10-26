@@ -38,10 +38,10 @@ CUDA_VER=10.2
 #
 #
 # Github URL for opencv zip file download.
-# Current default is to pull the version 4.3.0 release.
+# Current default is to pull the version 4.5.0 release.
 #   Note: You shouldn't need to change these.
 #
-OPENCV_VER=4.3.0
+OPENCV_VER=4.5.0
 OPENCV_URL=https://github.com/opencv/opencv/archive/$OPENCV_VER.zip
 OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/$OPENCV_VER.zip
 #
