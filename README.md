@@ -11,6 +11,8 @@ This verson will now upgrade from previous versions.
 You can donate [here](https://www.paypal.com/us/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=EJGPC7B5CS66E).
 
 ### Support
+This docker was developed and is currently supported on Unraid.  You are free to use it on other platforms, but there is no way I can reproduce or troubleshoot any issues when used on other platforms.
+
 Go to the Zoneminder Forum [here](https://forums.zoneminder.com/) for support.
 
 ### Installation
