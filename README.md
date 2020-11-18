@@ -104,3 +104,18 @@ You will have to install the CuDNN runtime yourself based on your particular set
 To access the Zoneminder gui, browse to: `https://<your host ip>:8443/zm`
 
 The zmNinja Event Notification Server is accessed at port `9000`.  Security with a self signed certificate is enabled.  You may have to install the certificate on iOS devices for the event notification to work properly.
+
+#### Troubleshooting when the docker fails
+
+If you have a situation where the docker fails to start, you can set an environemtnt variable when the docker is started and MySql and Zoneminder will not be started.  This will keep the docker running so you can get into a command line in the docker and troubleshoot the problem.
+
+Create an environment variable:
+NO_START_ZM="1"
+
+MySql and Zoneminder will not be started.
+
+Get into a command line in the docker and troubleshoot your issue by using the following commands to start MySql and zonemonder and fix any errors/problems with them starting.
+
+service mysql start
+
+service zoneminder start

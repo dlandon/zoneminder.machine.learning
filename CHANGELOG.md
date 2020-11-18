@@ -1,5 +1,8 @@
 ## Change Log
 
+### 2020-11-18
+- Add NO_START_ZM environment variable to keep MySql and Zoneminder from starting so the docker stays running and a user can troubleshoot.
+
 ### 2020-10-24
 - Update zmNinja Event Notification Server to version 6.0.5.
 - Update opencv to 4.3.

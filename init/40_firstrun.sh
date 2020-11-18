@@ -561,11 +561,15 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 fi
 
 echo "Starting services..."
-service mysql start
-
-# Update the database if necessary
-zmupdate.pl -nointeractive
-zmupdate.pl -f
-
 service apache2 start
-service zoneminder start
+if [ "$NO_START_ZM" != "1" ]; then
+	service mysql start
+
+	# Update the database if necessary
+	zmupdate.pl -nointeractive
+	zmupdate.pl -f
+
+	service zoneminder start
+else
+	echo "MySql and Zoneminder not started."
+fi
