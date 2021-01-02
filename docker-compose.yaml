@@ -8,10 +8,10 @@ services:
             - 8443:443/tcp
             - 9000:9000/tcp
         network_mode: "bridge"
-        privileged: true
+        privileged: false
+        shm-size: "5G"
         environment:
             - TZ=America/New_York
-            - SHMEM=2G
             - PUID=99
             - PGID=100
             - INSTALL_HOOK=0

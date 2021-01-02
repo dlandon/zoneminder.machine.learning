@@ -9,10 +9,10 @@ services:
             - 9000:9000/tcp
         runtime: nvidia
         network_mode: "bridge"
-        privileged: true
+        privileged: false
+        shm-size="5G"
         environment:
             - TZ=America/New_York
-            - SHMEM=2G
             - PUID=99
             - PGID=100
             - INSTALL_HOOK=0

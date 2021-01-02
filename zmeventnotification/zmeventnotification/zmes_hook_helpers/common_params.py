@@ -90,6 +90,7 @@ config_vals = {
             'default': '',
             'type': 'string'
         },
+     
         'basic_password':{
             'section': 'general',
             'default': '',
@@ -226,7 +227,7 @@ config_vals = {
             'type': 'string'
         },
 
-        # General ML
+        # remote ML
      
 
         'ml_gateway': {
@@ -251,6 +252,29 @@ config_vals = {
             'default': None,
             'type': 'string'
         },
+
+        'disable_locks': {
+            'section': 'ml',
+            'default': 'no',
+            'type': 'string'
+        },
+        'use_sequence': {
+            'section': 'ml',
+            'default': 'no',
+            'type': 'string'
+        },
+        'ml_sequence': {
+            'section': 'ml',
+            'default': None,
+            'type': 'string'
+        },
+        'stream_sequence': {
+            'section': 'ml',
+            'default': None,
+            'type': 'string'
+        },
+     
+     
        
        'object_detection_pattern':{
             'section': 'object',
@@ -291,29 +315,6 @@ config_vals = {
             'type': 'float'
         },
         
-        # HOG
-        'stride':{
-            'section': 'hog',
-            'default': '(4,4)',
-            'type': 'eval'
-        },
-        'padding':{
-            'section': 'hog',
-            'default': '(8,8)',
-            'type': 'eval'
-        },
-        'scale':{
-            'key': 'scale',
-            'section': 'hog',
-            'default': '1.05',
-            'type': 'string'
-        },
-        'mean_shift':{
-            'section': 'hog',
-            'default': '-1',
-            'type': 'string'
-        },
-
        # Face
        'face_detection_pattern':{
             'section': 'face',
@@ -329,6 +330,11 @@ config_vals = {
             'section': 'face',
             'default': 'dlib',
             'type': 'string'
+        },
+        'face_processor': {
+            'section' : 'face',
+            'default' : 'cpu',
+            'type'    : 'string'
         },
         'face_num_jitters':{
             'section': 'face',

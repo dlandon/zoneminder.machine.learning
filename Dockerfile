@@ -1,4 +1,4 @@
-FROM phusion/baseimage:bionic-1.0.0 as builder
+FROM phusion/baseimage:focal-1.0.0alpha1-amd64 as builder
 
 LABEL maintainer="dlandon"
 
@@ -13,17 +13,16 @@ ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
 	TERM="xterm" \
 	PHP_VERS="7.4" \
 	ZM_VERS="1.34" \
-	SHMEM="50%" \
 	PUID="99" \
 	PGID="100"
 
 FROM builder as build1
 COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
+COPY zmeventnotification/EventServer.tgz /root/
 
 RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	add-apt-repository ppa:ondrej/php && \
-	add-apt-repository ppa:jonathonf/ffmpeg-4 && \
 	apt-get update && \
 	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \
 	apt-get -y dist-upgrade -o Dpkg::Options::="--force-confold" && \

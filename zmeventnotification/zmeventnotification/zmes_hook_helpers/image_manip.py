@@ -53,7 +53,7 @@ def createAnimation(frametype, eid, fname, types):
         elif frametype == 'snapshot':
             fid = int(r_event.get('MaxScoreFrameId'))
         else:
-            fid = int(frameid)
+            fid = int(frametype)
 
         #g.logger.Debug (1,f'animation: Response {r}')
         if r_frame is None or not r_frame_len:
@@ -268,7 +268,7 @@ def processPastDetection(bbox, label, conf, mid):
 def processFilters(bbox, label, conf, match, model):
     # bbox is the set of bounding boxes
     # labels are set of corresponding object names
-    # conf are set of confidence scores (for hog and face this is set to 1)
+    # conf are set of confidence scores (for face this is set to 1)
     # match contains the list of labels that will be allowed based on detect_pattern
     #g.logger.Debug (1,"PROCESS INTERSECTION {} AND {}".format(bbox,label))
     new_label = []
@@ -299,7 +299,7 @@ def processFilters(bbox, label, conf, match, model):
         for p in g.polygons:
             poly = Polygon(p['value'])
             if obj.intersects(poly):
-                if model == 'object' and p['pattern'] != g.config['object_detection_pattern']:
+                if model == 'object' and p['pattern'] and p['pattern'] != g.config['object_detection_pattern']:
                     g.logger.Debug(2, '{} polygon/zone has its own pattern of {}, using that'.format(p['name'],p['pattern']))
                     r = re.compile(p['pattern'])
                     match = list(filter(r.match, label))

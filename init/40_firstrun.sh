@@ -24,8 +24,9 @@ fi
 
 # Get the latest ES bundle
 cd /root
+
 rm -rf zmeventnotification
-wget -q https://github.com/dlandon/zoneminder/raw/master/zmeventnotification/EventServer.tgz
+wget -q https://github.com/dlandon/zoneminder-docker/raw/master/zmeventnotification/EventServer.tgz
 if [ -f EventServer.tgz ]; then
 	tar -xf EventServer.tgz
 	rm EventServer.tgz
@@ -109,6 +110,17 @@ else
 	echo "Pushover api already moved"
 fi
 
+# Handle the es_rules.json
+if [ -f /root/zmeventnotification/es_rules.json ]; then
+	echo "Moving es_rules.json"
+	cp /root/zmeventnotification/es_rules.json /config/es_rules.json.default
+	if [ ! -f /config/es_rules.json ]; then
+		mv /root/zmeventnotification/es_rules.json /config/es_rules.json
+	else
+		rm -rf /etc/zm/es_rules.json
+	fi
+fi
+
 # Move ssmtp configuration if it doesn't exist
 if [ ! -d /config/ssmtp ]; then
 	echo "Moving ssmtp to config folder"
@@ -162,6 +174,7 @@ mkdir -p /var/lib/zmeventnotification/push
 mkdir -p /config/push
 rm -rf /var/lib/zmeventnotification/push/tokens.txt
 ln -sf /config/push/tokens.txt /var/lib/zmeventnotification/push/tokens.txt
+ln -sf /config/es_rules.json /etc/zm/es_rules.json
 
 # ssmtp
 rm -r /etc/ssmtp 
@@ -175,6 +188,13 @@ ln -s /config/mysql /var/lib/mysql
 PUID=${PUID:-99}
 PGID=${PGID:-100}
 usermod -o -u $PUID nobody
+
+# Check if the group with GUID passed as environment variable exists and create it if not.
+if ! getent group "$PGID" >/dev/null; then
+  groupadd -g "$PGID" env-provided-group
+  echo "Group with id: $PGID did not already exist, so we created it."
+fi
+
 usermod -g $PGID nobody
 usermod -d /config nobody
 
@@ -309,11 +329,6 @@ chown www-data:www-data /etc/zm/zmeventnotification.ini
 # Symbolink for /config/secrets.ini
 ln -sf /config/secrets.ini /etc/zm/
 
-# Fix memory issue
-echo "Setting shared memory to : $SHMEM of `awk '/MemTotal/ {print $2}' /proc/meminfo` bytes"
-umount /dev/shm
-mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=${SHMEM} tmpfs /dev/shm
-
 # Set multi-ports in apache2 for ES.
 # Start with default configuration.
 cp /etc/apache2/ports.conf.default /etc/apache2/ports.conf
@@ -429,10 +444,10 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	if [ -f /root/zmeventnotification/config_upgrade.py ]; then
 		echo "Moving config_upgrade.py"
 		mv /root/zmeventnotification/config_upgrade.py /config/hook/config_upgrade.py
-		mv /root/zmeventnotification/config_upgrade.sh /config/hook/config_upgrade.sh
+		rm -rf /config/hook/config_upgrade.sh
 		chmod +x /config/hook/config_upgrade.*
 	else
-		echo "config_upgrade.py script not found"
+		echo "File config_upgrade.py already moved"
 	fi
 
 	# Handle the zm_event_start.sh file
@@ -459,12 +474,28 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		echo "File zm_detect.py already moved"
 	fi
 
+	# Handle the zm_detect_old.py file
+	if [ -f /root/zmeventnotification/zm_detect_old.py ]; then
+		echo "Moving zm_detect_old.py"
+		mv /root/zmeventnotification/zm_detect_old.py /config/hook/zm_detect_old.py
+	else
+		echo "File zm_detect_old.py already moved"
+	fi
+
 	# Handle the zm_train_faces.py file
 	if [ -f /root/zmeventnotification/zm_train_faces.py ]; then
 		echo "Moving zm_train_faces.py"
 		mv /root/zmeventnotification/zm_train_faces.py /config/hook/zm_train_faces.py
 	else
 		echo "File zm_train_faces.py already moved"
+	fi
+
+	# Handle the train_faces.py file
+	if [ -f /root/zmeventnotification/train_faces.py ]; then
+		echo "Moving train_faces.py"
+		mv /root/zmeventnotification/train_faces.py /config/hook/train_faces.py
+	else
+		echo "File train_faces.py already moved"
 	fi
 
 	# Symbolic link for models in /config
@@ -507,7 +538,9 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	# Symbolic link for hook files in /config
 	mkdir -p /var/lib/zmeventnotification/bin
 	ln -sf /config/hook/zm_detect.py /var/lib/zmeventnotification/bin/zm_detect.py
+	ln -sf /config/hook/zm_detect_old.py /var/lib/zmeventnotification/bin/zm_detect_old.py
 	ln -sf /config/hook/zm_train_faces.py /var/lib/zmeventnotification/bin/zm_train_faces.py
+	ln -sf /config/hook/train_faces.py /var/lib/zmeventnotification/bin/train_faces.py
 	ln -sf /config/hook/zm_event_start.sh /var/lib/zmeventnotification/bin/zm_event_start.sh
 	ln -sf /config/hook/zm_event_end.sh /var/lib/zmeventnotification/bin/zm_event_end.sh
 	chmod +x /var/lib/zmeventnotification/bin/*
@@ -557,7 +590,7 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		fi
 	fi
 
-	mv /root/zmeventnotification/setup.py /root/setup.py
+	mv /root/zmeventnotification/setup.py /root/setup.py 2>/dev/null
 fi
 
 echo "Starting services..."

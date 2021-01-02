@@ -10,6 +10,7 @@ wej qaStaHvIS wa' ghu'maj. wa'maHlu'chugh, vaj pagh.
 chotlhej'a' qaDanganpu'. chenmoH tlhInganpu'.
 '''
 
+breaking = False
 
 def sanity_check(s, c, v):
 
@@ -23,7 +24,8 @@ There is an error in your config. While upgrading to version:{}
 I found a key ({}) that should not have been there. 
 This usually means when you last upgraded, your version attribute
 was not upgraded for some reason. To be safe, this script will not
-upgrade the script till you fix the potential issues
+upgrade the script till you fix the potential issues (or manually 
+bump up version)
             '''.format(v,attr))
             exit(1)        
 
@@ -54,6 +56,123 @@ def create_attributes(orig_string, new_additions):
 # add new version migrations as functions
 # def f_<fromver>_to_<tover>(str_conf,new_version):
 
+def f_1_1_to_1_2(str_conf,new_version):
+
+    print ('*** Only basic changes have been made. Please study the sample objectconfig.ini file to see all the other parameters ***')
+
+    should_not_be_there = {
+        'ml_sequence',
+        'stream_sequence'
+    }
+    replacements = {
+        'version=1.1': 'version='+new_version,
+        '# config for object': ''
+    }
+    new_additions= {
+'\n[object]\n':
+'''
+[ml]
+
+# NEW: If enabled (default = no), we will use ml_sequence and stream_sequence 
+# and ignore everything in [object] [face] and [alpr]
+#
+# use_sequence = yes
+
+# NEW: You can use this structure to create a chain of detection algorithms
+# See https://pyzm.readthedocs.io/en/latest/source/pyzm.html#detectsequence for options (look at options field)
+
+# VERY IMPORTANT - The curly braces need to be indented to be inside ml_sequence
+# tag, or parsing will fail
+# NOTE: If you specify this attribute, all settings in [object], [face] and [alpr] will be ignored
+
+ml_sequence= {
+            'general': {
+                    'model_sequence': 'object,face,alpr',
+
+            },
+            'object': {
+                    'general':{
+                            'pattern':'(person)',
+                            'same_model_sequence_strategy': 'first' # also 'most', 'most_unique's
+                    },
+                    'sequence': [{
+                            #First run on TPU with higher confidence
+                            'object_weights':'{{base_data_path}}/models/coral_edgetpu/ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite',
+                            'object_labels': '{{base_data_path}}/models/coral_edgetpu/coco_indexed.names',
+                            'object_min_confidence': 0.6,
+                            'object_framework':'coral_edgetpu'
+                    },
+                    {
+                            # YoloV4 on GPU if TPU fails (because sequence strategy is 'first')
+                            'object_config':'{{base_data_path}}/models/yolov4/yolov4.cfg',
+                            'object_weights':'{{base_data_path}}/models/yolov4/yolov4.weights',
+                            'object_labels': '{{base_data_path}}/models/yolov4/coco.names',
+                            'object_min_confidence': 0.3,
+                            'object_framework':'opencv',
+                            'object_processor': 'gpu'
+                    }]
+            },
+            'face': {
+                    'general':{
+                            'pattern': '.*',
+                            'same_model_sequence_strategy': 'first'
+                    },
+                    'sequence': [{
+                            'face_detection_framework': 'dlib',
+                            'known_images_path': '{{base_data_path}}/known_faces',
+                            'face_model': 'cnn',
+                            'face_train_model': 'cnn',
+                            'face_recog_dist_threshold': 0.6,
+                            'face_num_jitters': 1,
+                            'face_upsample_times':1,
+                            'save_unknown_faces':'yes',
+                            'save_unknown_faces_leeway_pixels':100
+                    }]
+            },
+
+            'alpr': {
+                    'general':{
+                            'same_model_sequence_strategy': 'first',
+                            'pre_existing_labels':['car', 'motorbike', 'bus', 'truck', 'boat'],
+
+                    },
+                    'sequence': [{
+                            'alpr_api_type': 'cloud',
+                            'alpr_service': 'plate_recognizer',
+                            'alpr_key': '!PLATEREC_ALPR_KEY',
+                            'platrec_stats': 'no',
+                            'platerec_min_dscore': 0.1,
+                            'platerec_min_score': 0.2,
+                    }]
+            }
+        }
+
+# NEW: This new structure can be used to select arbitrary frames for analysis 
+# See https://pyzm.readthedocs.io/en/latest/source/pyzm.html#pyzm.ml.detect_sequence.DetectSequence.detect_stream
+# for options (look at options field)
+# NOTE: If stream_sequence specified, the following pre-existing attributes in objectconfig.ini will be ignored
+# as you are now able to specify them inside the sequence:
+#   - frame_id (replaced by frame_set inside stream_sequence),
+#   - resize 
+#   - delete_after_analyze 
+#   
+stream_sequence = {
+        'detection_mode': 'most_models',
+        'frame_set': 'snapshot,alarm',
+
+    }
+
+# config for object
+[object]
+''' 
+  
+        
+    }
+    if sanity_check(should_not_be_there, str_conf, new_version):
+        s1=replace_attributes(str_conf,replacements)
+        return (create_attributes(s1, new_additions))        
+
+
 def f_1_0_to_1_1(str_conf,new_version):
     replacements = {
         'version=1.0': 'version='+new_version
@@ -80,7 +199,8 @@ fast_gif=no
 
 
 def f_unknown_to_1_0(str_conf, new_version):
-
+    global breaking
+    breaking = True
     should_not_be_there = {
         'cpu_max_processes',
         'tpu_max_processes',
@@ -188,6 +308,10 @@ upgrade_path = [
      'to_version': '1.1',
      'migrate':f_1_0_to_1_1
     },
+     {'from_version': '1.1',
+     'to_version': '1.2',
+     'migrate':f_1_1_to_1_2
+    },
    
 ]
 
@@ -201,7 +325,7 @@ args = vars(args)
 
 
 
-config_file = ConfigParser(interpolation=None)
+config_file = ConfigParser(interpolation=None, inline_comment_prefixes='#')
 config_file.read(args.get('config'))
 
 version = 'unknown'
@@ -243,5 +367,9 @@ Items marked with #NEW are new options to customize.
     print ('Migrated config written to: {}'.format(out_file))
 else:
     print ('Nothing to migrate')
-    exit(0)
+
+if breaking:
+    print("\nTHIS IS A BREAKING CHANGE RELEASE. THINGS WILL NOT WORK TILL YOU FOLLOW https://zmeventnotification.readthedocs.io/en/latest/guides/breaking.html#version-5-16-0-onwards\n")
+    
+exit(0)
 #from_unknown_to_1_0()
