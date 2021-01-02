@@ -12,7 +12,7 @@ services:
         privileged: true
         environment:
             - TZ=America/New_York
-            - SHMEM=50%
+            - SHMEM=2G
             - PUID=99
             - PGID=100
             - INSTALL_HOOK=0
