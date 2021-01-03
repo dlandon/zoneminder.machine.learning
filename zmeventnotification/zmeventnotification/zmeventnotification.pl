@@ -43,7 +43,7 @@ use Symbol qw(qualify_to_ref);
 use IO::Select;
 
 ####################################
-my $app_version = '6.1.0';
+my $app_version = '6.1.5';
 ####################################
 
 # do this before any log init etc.
@@ -3251,7 +3251,7 @@ sub getInterval {
 
 sub isValidMonIntList {
   my $m = shift;
-  printDebug("REMOVE isValid: validating $m",2);
+  #printDebug("REMOVE isValid: validating $m",2);
 
   return defined($m) && ($m ne "-1") && ($m ne "");
 }
@@ -3261,7 +3261,7 @@ sub isValidMonIntList {
 sub isInList {
   my $monlist = shift;
   my $mid     = shift;
-  printDebug("REMOVE: looking for $mid inside $monlist",2);
+  #printDebug("REMOVE: looking for $mid inside $monlist",2);
   return 1 if ( $monlist eq "-1" || $monlist eq "" || !$monlist || !defined($monlist) );
 
   my @mids = split( ',', $monlist );
