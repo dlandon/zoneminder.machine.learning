@@ -14,12 +14,19 @@ else
 	echo "Using existing conf folder"
 fi
 
-if [ -f /root/zm.conf ]; then
-	echo "Moving zm.conf to config folder"
-	mv /root/zm.conf /config/conf/zm.default
+# Handle the zm.conf files
+if [ ! -f /config/conf/zm.default ]; then
+	echo "Copying zm.conf to config folder"
+	cp /etc/zm/zm.conf /config/conf/zm.default
 	cp /etc/zm/conf.d/README /config/conf/README
 else
-	echo "File zm.conf already moved"
+	echo "File zm.conf already copied"
+fi
+
+# Copy custom zm.conf to /etc/zm/conf.d/
+if [ -f /config/conf/zm.conf ]; then
+	echo "Copy custom zm.conf to /etc/zm/cond.d/"
+	cp /config/conf/zm.conf /etc/zm/cond.d/zm.conf
 fi
 
 # Get the latest ES bundle
