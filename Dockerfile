@@ -80,7 +80,8 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	echo "#!/bin/sh\n\n/usr/bin/zmaudit.pl -f" >> /etc/cron.weekly/zmaudit && \
 	chmod +x /etc/cron.weekly/zmaudit && \
 	cp /etc/apache2/ports.conf /etc/apache2/ports.conf.default && \
-	cp /etc/apache2/sites-enabled/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf.default
+	cp /etc/apache2/sites-enabled/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf.default && \
+	sed -i s#3.13#3.25#g /etc/syslog-ng/syslog-ng.conf
 
 FROM build5 as build6
 RUN	apt-get -y remove make && \
