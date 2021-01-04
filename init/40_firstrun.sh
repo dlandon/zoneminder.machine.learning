@@ -23,10 +23,10 @@ else
 	echo "File zm.conf already copied"
 fi
 
-# Copy custom zm.conf to /etc/zm/conf.d/
-if [ -f /config/conf/zm.conf ]; then
-	echo "Copy custom zm.conf to /etc/zm/cond.d/"
-	cp /config/conf/zm.conf /etc/zm/cond.d/zm.conf
+# Copy custom 99-mysql.conf to /etc/zm/conf.d/
+if [ -f /config/conf/99-mysql.conf ]; then
+	echo "Copy custom 99-mysql.conf to /etc/zm/conf.d/"
+	cp /config/conf/99-mysql.conf /etc/zm/conf.d/99-mysql.conf
 fi
 
 # Get the latest ES bundle
