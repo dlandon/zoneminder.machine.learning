@@ -45,7 +45,8 @@ RUN	rm /etc/mysql/my.cnf && \
 	perl -MCPAN -e "force install LWP::Protocol::https" && \
 	perl -MCPAN -e "force install Config::IniFiles" && \
 	perl -MCPAN -e "force install Net::MQTT::Simple" && \
-	perl -MCPAN -e "force install Net::MQTT::Simple::Auth"
+	perl -MCPAN -e "force install Net::MQTT::Simple::Auth" && \
+	perl -MCPAN -e "force install Time::Piece"
 
 FROM build2 as build3
 RUN	cd /root && \
