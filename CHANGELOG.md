@@ -1,5 +1,9 @@
 ## Change Log
 
+### 021-01-07
+- Remove /config/mysql/ib_logfile* files to insure that mysql starts.
+- Increase shm-size to 8G.
+
 ### 2021-01-03
 - Fix syslog-ng configuration file version.
 - Update zmNinja Event Notification Server to version 6.1.5.

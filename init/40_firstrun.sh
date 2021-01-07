@@ -533,8 +533,8 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 
 	# Symbolic link for coral_edgetpu in /config
 	rm -rf /var/lib/zmeventnotification/coral_edgetpu
-	ln -sf /config/hook/coral_edgetpu /var/lib/zmeventnotification/coral_edgetpu
-	chown -R www-data:www-data /var/lib/zmeventnotification/coral_edgetpu
+	ln -sf /config/hook/coral_edgetpu /var/lib/zmeventnotification/models/coral_edgetpu
+	chown -R www-data:www-data /var/lib/zmeventnotification/models/coral_edgetpu
 
 	# Create coral_edgetpu folder if it doesn't exist
 	if [ ! -d /config/hook/coral_edgetpu ]; then
@@ -600,9 +600,13 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 	mv /root/zmeventnotification/setup.py /root/setup.py 2>/dev/null
 fi
 
+# Clean up mysql log files to insure mysql will start
+rm -f /config/mysql/ib_logfile* 2>/dev/null
+
 echo "Starting services..."
 service apache2 start
 if [ "$NO_START_ZM" != "1" ]; then
+	# Start mysql
 	service mysql start
 
 	# Update the database if necessary

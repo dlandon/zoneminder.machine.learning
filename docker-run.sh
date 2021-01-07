@@ -3,7 +3,7 @@
 docker run -d --name="Zoneminder" \
 --net="bridge" \
 --privileged="false" \
---shm-size="5G" \
+--shm-size="8G" \
 -p 8443:443/tcp \
 -p 9000:9000/tcp \
 -e TZ="America/New_York" \
