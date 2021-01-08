@@ -1,6 +1,7 @@
 ## Change Log
 
-### 021-01-07
+### 2021-01-07
+- Update opencv.sh to Ubuntu 20.04.
 - Remove /config/mysql/ib_logfile* files to insure that mysql starts.
 - Increase shm-size to 8G.
 

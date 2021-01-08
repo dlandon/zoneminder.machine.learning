@@ -531,16 +531,16 @@ if [ "$INSTALL_HOOK" == "1" ]; then
 		mkdir -p /config/hook/misc
 	fi
 
-	# Symbolic link for coral_edgetpu in /config
-	rm -rf /var/lib/zmeventnotification/coral_edgetpu
-	ln -sf /config/hook/coral_edgetpu /var/lib/zmeventnotification/models/coral_edgetpu
-	chown -R www-data:www-data /var/lib/zmeventnotification/models/coral_edgetpu
-
 	# Create coral_edgetpu folder if it doesn't exist
 	if [ ! -d /config/hook/coral_edgetpu ]; then
 		echo "Creating hook/coral_edgetpu folder in config folder"
 		mkdir -p /config/hook/coral_edgetpu
 	fi
+
+	# Symbolic link for coral_edgetpu in /config
+	rm -rf /var/lib/zmeventnotification/models/coral_edgetpu
+	ln -sf /config/hook/coral_edgetpu/ /var/lib/zmeventnotification/models
+	chown -R www-data:www-data /var/lib/zmeventnotification/models/coral_edgetpu
 
 	# Symbolic link for hook files in /config
 	mkdir -p /var/lib/zmeventnotification/bin
