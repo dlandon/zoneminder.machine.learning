@@ -1,7 +1,7 @@
 ## Zoneminder Docker
 (Current version: 1.34)
 
-This Docker is deprecated and no longer supported.
+THIS DOCKER IS DEPRECATED AND NO LONGER SUPPORTED.
 
 ### About
 This is an easy to run dockerized image of [ZoneMinder](https://github.com/ZoneMinder/zoneminder) along with the the [ZM Event Notification Server](https://github.com/pliablepixels/zmeventnotification) and its machine learning subsystem (which is disabled by default but can be enabled by a simple configuration).  
