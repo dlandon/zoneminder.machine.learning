@@ -10,7 +10,7 @@ services:
         runtime: nvidia
         network_mode: "bridge"
         privileged: false
-        shm_size=8G
+        shm_size: 8G
         environment:
             - TZ=America/New_York
             - PUID=99
