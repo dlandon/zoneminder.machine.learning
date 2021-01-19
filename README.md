@@ -36,18 +36,12 @@ To run Zoneminder:
 docker run -d --name="Zoneminder" \
 --net="bridge" \
 --privileged="false" \
---shm-size="5G" \
+--shm-size="8G" \
 -p 8443:443/tcp \
 -p 9000:9000/tcp \
 -e TZ="America/New_York" \
 -e PUID="99" \
 -e PGID="100" \
--e INSTALL_HOOK="0" \
--e INSTALL_FACE="0" \
--e INSTALL_TINY_YOLOV3="0" \
--e INSTALL_YOLOV3="0" \
--e INSTALL_TINY_YOLOV4="0" \
--e INSTALL_YOLOV4="0" \
 -e MULTI_PORT_START="0" \
 -e MULTI_PORT_END="0" \
 -v "/mnt/Zoneminder":"/config":rw \
@@ -60,21 +54,12 @@ For http:// access use: `-p 8080:80/tcp`
 ### Shared Memory
 Set shared memory to half of your installed memory.
 
-**Note**: If you have opted to install face recognition, and/or have opted to download the yolo models, it takes time.
-Face recognition in particular can take several minutes (or more). Once the `docker run` command above completes, you may not be able to access ZoneMinder until all the downloads are done. To follow along the installation progress, do a `docker logs -f Zoneminder` to see the syslog for the container that was created above.
-
 ### Subsequent runs
 
 You can start/stop/restart the container anytime. You don't need to run the command above every time. If you have already created the container once (by the `docker run` command above), you can simply do a `docker stop Zoneminder` to stop it and a `docker start Zoneminder` to start it any time (or do a `docker restart Zoneminder`).
 
 #### Customization
 
-- Set `INSTALL_HOOK="1"` to install the hook processing packages and run setup.py to prepare the hook processing. The initial installation can take a long time.
-- Set `INSTALL_FACE="1"` to install face recognition packages. The initial installation can take a long time.
-- Set `INSTALL_TINY_YOLOV3="1"` to install the tiny yolo v3 hook processing files.
-- Set `INSTALL_YOLOV3="1"` to install the yolo v3 hook processing files.
-- Set `INSTALL_TINY_YOLOV4="1"` to install the tiny yolo v4 hook processing files.
-- Set `INSTALL_YOLOV4="1"` to install the yolo v4 hook processing files.
 - Set `MULTI_PORT_START` and `MULTI_PORT_END` to define a port range for ES multi-port operation.
 - The commands above use a host path of `/mnt/Zoneminder` to map the container config and cache directories. This is going to be persistent directory that will retain data across container/image stop/restart/deletes. ZM mysql/other config data/event files/etc are kept here. You can change this to any directory in your host path that you want to.
 

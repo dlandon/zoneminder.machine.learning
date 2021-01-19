@@ -43,7 +43,7 @@ use Symbol qw(qualify_to_ref);
 use IO::Select;
 
 ####################################
-my $app_version = '6.1.5';
+my $app_version = '6.1.7';
 ####################################
 
 # do this before any log init etc.
@@ -123,7 +123,7 @@ use constant {
 
   DEFAULT_CUSTOMIZE_VERBOSE                       => 'no',
   DEFAULT_CUSTOMIZE_EVENT_CHECK_INTERVAL          => 5,
-  DEFAULT_CUSTOMIZE_ES_DEBUG_LEVEL                => 4,
+  DEFAULT_CUSTOMIZE_ES_DEBUG_LEVEL                => 5,
   DEFAULT_CUSTOMIZE_MONITOR_RELOAD_INTERVAL       => 300,
   DEFAULT_CUSTOMIZE_READ_ALARM_CAUSE              => 'no',
   DEFAULT_CUSTOMIZE_TAG_ALARM_EVENT_ID            => 'no',

@@ -1,4 +1,6 @@
 ## Change Log
+### 2021-01-19
+- Prepare for Zoneminder ES/ML Docker container with ES/ML preloaded.
 
 ### 2021-01-07
 - Update opencv.sh to Ubuntu 20.04.
