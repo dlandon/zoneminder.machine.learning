@@ -46,7 +46,7 @@ docker run -d --name="Zoneminder" \
 -e MULTI_PORT_END="0" \
 -v "/mnt/Zoneminder":"/config":rw \
 -v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
-dlandon/zoneminder
+dlandon/zoneminder.machine.learning
 ```
 
 For http:// access use: `-p 8080:80/tcp`
