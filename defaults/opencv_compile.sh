@@ -4,7 +4,7 @@
 # Script to compile opencv without gpu support.
 #
 #
-OPENCV_VER=4.5.0
+OPENCV_VER=4.5.1
 OPENCV_URL=https://github.com/opencv/opencv/archive/$OPENCV_VER.zip
 OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/$OPENCV_VER.zip
 #
