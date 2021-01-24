@@ -1,4 +1,7 @@
 ## Change Log
+### 2021-01-24
+- Preliminary release of machine learning Docker.
+
 ### 2021-01-19
 - Prepare for Zoneminder ES/ML Docker container with ES/ML preloaded.
 
