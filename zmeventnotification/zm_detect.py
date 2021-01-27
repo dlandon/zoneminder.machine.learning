@@ -28,14 +28,12 @@ import zmes_hook_helpers.utils as utils
 import pyzm.helpers.utils as pyzmutils
 import zmes_hook_helpers.common_params as g
 from pyzm import __version__ as pyzm_version
-from zmes_hook_helpers import __version__ as hooks_version
-
 
 auth_header = None
 
+__app_version__ = '6.1.10'
 
-
-def remote_detect(stream=None, options=None, api=None):
+def remote_detect(stream=None, options=None, api=None, args=None):
     # This uses mlapi (https://github.com/pliablepixels/mlapi) to run inferencing and converts format to what is required by the rest of the code.
 
     import requests
@@ -56,21 +54,27 @@ def remote_detect(stream=None, options=None, api=None):
     if os.path.exists(data_file):
         g.logger.Debug(2,'Found token file, checking if token has not expired')
         with open(data_file) as json_file:
-            data = json.load(json_file)
-        generated = data['time']
-        expires = data['expires']
-        access_token = data['token']
-        now = time.time()
-        # lets make sure there is at least 30 secs left
-        if int(now + 30 - generated) >= expires:
-            g.logger.Debug(
-                1,'Found access token, but it has expired (or is about to expire)'
-            )
-            access_token = None
-        else:
-            g.logger.Debug(1,'Access token is valid for {} more seconds'.format(
-                int(now - generated)))
-            # Get API access token
+            try:
+                data = json.load(json_file)
+            except Exception as e: 
+                g.logger.Error ('Error loading login.json: {}'.format(e))
+                os.remove(data_file)
+                access_token = None
+            else:
+                generated = data['time']
+                expires = data['expires']
+                access_token = data['token']
+                now = time.time()
+                # lets make sure there is at least 30 secs left
+                if int(now + 30 - generated) >= expires:
+                    g.logger.Debug(
+                        1,'Found access token, but it has expired (or is about to expire)'
+                    )
+                    access_token = None
+                else:
+                    g.logger.Debug(1,'Access token is valid for {} more seconds'.format(
+                        int(now - generated)))
+                    # Get API access token
     if not access_token:
         g.logger.Debug(1,'Invoking remote API login')
         r = requests.post(url=login_url,
@@ -99,7 +103,21 @@ def remote_detect(stream=None, options=None, api=None):
     auth_header = {'Authorization': 'Bearer ' + access_token}
     
     params = {'delete': True, 'response_format': 'zm_detect'}
-    files = {}
+
+    if args.get('file'):
+        g.logger.Debug (2, "Reading image from {}".format(args.get('file')))
+        image = cv2.imread(args.get('file'))
+        if g.config['resize'] and g.config['resize'] != 'no':
+            g.logger.Debug (2,'Resizing image before sending')
+            img_new = imutils.resize(image,
+                                     width=min(int(g.config['resize']),
+                                               image.shape[1]))
+            image = img_new
+            ret, jpeg = cv2.imencode('.jpg', image)
+            files = {'file': ('image.jpg', jpeg.tobytes())}
+
+    else:
+        files = {}
     #print (object_url)
 
     
@@ -115,22 +133,29 @@ def remote_detect(stream=None, options=None, api=None):
             'pattern': g.config['ml_sequence'].get('alpr',{}).get('general',{}).get('pattern')
         },
     }
-    g.logger.Debug(2,f'Invoking mlapi with url:{object_url} and json: stream={stream}, stream_options={options} ml_overrides={ml_overrides}')
+    g.logger.Debug(2,f'Invoking mlapi with url:{object_url} and json: stream={stream}, stream_options={options} ml_overrides={ml_overrides} headers={auth_header} params={params} ')
     start = datetime.datetime.now()
+    try:
+        r = requests.post(url=object_url,
+                        headers=auth_header,
+                        params=params,
+                        files=files,
+                        json = {
+                            'stream': stream,
+                            'stream_options':options,
+                            'ml_overrides':ml_overrides
+                        }
+                        )
+        r.raise_for_status()
+    except Exception as e:
+        g.logger.Error ('Error during remote post: {}'.format(str(e)))
+        g.logger.Debug(2,traceback.format_exc())
+        raise
 
-    r = requests.post(url=object_url,
-                      headers=auth_header,
-                      params=params,
-                      files=files,
-                      json = {
-                        'stream': stream,
-                        'stream_options':options,
-                        'ml_overrides':ml_overrides
-                      }
-                    )
     diff_time = (datetime.datetime.now() - start)
     g.logger.Debug(1,'remote detection inferencing took: {}'.format(diff_time))
     data = r.json()
+    print(r)
     matched_data = data['matched_data']
     if g.config['write_image_to_zm'] == 'yes'  and matched_data['frame_id']:
         url = '{}/index.php?view=image&eid={}&fid={}'.format(g.config['portal'], stream,matched_data['frame_id'] )
@@ -182,6 +207,10 @@ def main_handler():
                     '--version',
                     help='print version and quit',
                     action='store_true')
+    ap.add_argument(
+                    '--bareversion',
+                    help='print only app version and quit',
+                    action='store_true')
 
     ap.add_argument('-o', '--output-path',
                     help='internal testing use only - path for debug images to be written')
@@ -200,7 +229,11 @@ def main_handler():
     args = vars(args)
 
     if args.get('version'):
-        print('hooks:{} pyzm:{}'.format(hooks_version, pyzm_version))
+        print('app:{}, pyzm:{}'.format(__app_version__,pyzm_version))
+        exit(0)
+
+    if args.get('bareversion'):
+        print('{}'.format(__app_version__))
         exit(0)
 
     if not args.get('config'):
@@ -237,7 +270,7 @@ def main_handler():
     except ImportError as e:
         g.logger.Fatal (f'{e}: You might not have installed OpenCV as per install instructions. Remember, it is NOT automatically installed')
 
-    g.logger.Info('---------| pyzm version:{}, hook version:{},  ES version:{} , OpenCV version:{}|------------'.format(pyzm_version, hooks_version, es_version, cv2.__version__))
+    g.logger.Info('---------| app:{}, pyzm:{}, ES:{} , OpenCV:{}|------------'.format(__app_version__,pyzm_version, es_version, cv2.__version__))
    
 
     
@@ -358,7 +391,7 @@ def main_handler():
         stream_options['monitorid'] = args.get('monitorid')
         start = datetime.datetime.now()
         try:
-            matched_data,all_data = remote_detect(stream=stream, options=stream_options, api=zmapi)
+            matched_data,all_data = remote_detect(stream=stream, options=stream_options, api=zmapi, args=args)
             diff_time = (datetime.datetime.now() - start)
             g.logger.Debug(1,'Total remote detection detection took: {}'.format(diff_time))
         except Exception as e:
@@ -460,7 +493,8 @@ def main_handler():
         if (matched_data['image'] is not None) and (g.config['write_image_to_zm'] == 'yes' or g.config['write_debug_image'] == 'yes'):
             debug_image = pyzmutils.draw_bbox(image=matched_data['image'],boxes=matched_data['boxes'], 
                                               labels=matched_data['labels'], confidences=matched_data['confidences'],
-                                              polygons=g.polygons, poly_thickness = g.config['poly_thickness'])
+                                              polygons=g.polygons, poly_thickness = g.config['poly_thickness'],
+                                              write_conf=True if g.config['show_percent'] == 'yes' else False )
 
             if g.config['write_debug_image'] == 'yes':
                 for _b in matched_data['error_boxes']:

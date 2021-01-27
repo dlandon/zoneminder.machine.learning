@@ -37,13 +37,14 @@
 use strict;
 use bytes;
 use POSIX ':sys_wait_h';
+#use POSIX ':sys_wait_h';
 use Time::HiRes qw/gettimeofday/;
 use Time::Seconds;
 use Symbol qw(qualify_to_ref);
 use IO::Select;
 
 ####################################
-my $app_version = '6.1.7';
+my $app_version = '6.1.10';
 ####################################
 
 # do this before any log init etc.
@@ -181,6 +182,7 @@ use constant {
 };
 
 my $child_forks = 0;    # Global tracker of active children
+my $total_forks = 0;    # Global tracker of all forks since start
 
 # Declare options.
 
@@ -293,6 +295,8 @@ my $dummyEventInterval     = 20;       # timespan to generate events in seconds
 my $dummyEventTimeLastSent = time();
 
 # This part makes sure we have the right core deps. See later for optional deps
+
+
 
 if ( !try_use('Net::WebSocket::Server') ) {
   Fatal('Net::WebSocket::Server missing');
@@ -823,6 +827,7 @@ else {
 #
 # ==========================================================================
 
+
 use ZoneMinder;
 use POSIX;
 use DBI;
@@ -909,6 +914,7 @@ my $zmdc_active = 0;
 
 # Main entry point
 #
+
 
 printInfo("|------- Starting ES version: $app_version ---------|");
 printDebug( "Started with: perl:" . $^X . " and command:" . $0, 1 );
@@ -3770,7 +3776,7 @@ sub processNewAlarmsInFork {
   # will contain succ/fail of hook scripts, or 1 (fail) if not invoked
   my $hookResult      = 0;
   my $startHookResult = $hookResult;
-  my $startHookString = '';
+  my $hookString = '';
 
   my $endProcessed = 0;
 
@@ -3890,7 +3896,7 @@ sub processNewAlarmsInFork {
               . '--SPLIT--'
               . $alarm->{Start}->{Cause}
               . '--JSON--'
-              . $alarm->{Start}->{resJsonString} . "\n";
+              . $resJsonString . "\n";
 
   # This updates the ZM DB with the detected description
   # we are writing resTxt not alarm cause which is only detection text
@@ -3902,7 +3908,7 @@ sub processNewAlarmsInFork {
               . '--SPLIT--'
               . $resTxt . "\n";
 
-            $startHookString = $resTxt;
+            $hookString = $resTxt;
           }    # use_hook_desc
 
         }
@@ -4017,22 +4023,22 @@ sub processNewAlarmsInFork {
       else {    # start processing over, so end can be processed
 
         my $notes = getNotesFromEventDB($eid);
-        if ($startHookString) {
+        if ($hookString) {
           if ( index( $notes, 'detected:' ) == -1 ) {
             printDebug(
-              "ZM overwrote detection DB, current notes: [$notes], adding detection notes back into DB [$startHookString]",
+              "ZM overwrote detection DB, current notes: [$notes], adding detection notes back into DB [$hookString]",
               1
             );
 
             # This will be prefixed, so no need to add old notes back
-            updateEventinZmDB( $eid, $startHookString );
+            updateEventinZmDB( $eid, $hookString );
           }
           else {
             printDebug( "DB Event notes contain detection text, all good", 2 );
           }
         }
 
-        if ( $event_end_hook && $use_hooks ) {
+        if ( $event_end_hook && $use_hooks) {
 
           # invoke end hook script
           my $cmd =
@@ -4107,6 +4113,38 @@ sub processNewAlarmsInFork {
             printDebug( "invoking user end notification script $user_cmd", 1 );
             my $user_res = `$user_cmd`;
           }    # user notify script
+
+          if ($use_hook_description && 
+              ($hookResult == 0) && (index($resTxt,'detected:') != -1)) {
+            printDebug ("Event end: overwriting notes with $resTxt",1);
+            $alarm->{End}->{Cause} =
+              $resTxt . ' ' . $alarm->{End}->{Cause};
+            $alarm->{End}->{DetectionJson} = decode_json($resJsonString);
+
+            print WRITER 'active_event_update--TYPE--'
+              . $mid
+              . '--SPLIT--'
+              . $eid
+              . '--SPLIT--' . 'Start'
+              . '--SPLIT--' . 'Cause'
+              . '--SPLIT--'
+              . $alarm->{End}->{Cause}
+              . '--JSON--'
+              . $resJsonString . "\n";
+
+            # This updates the ZM DB with the detected description
+            # we are writing resTxt not alarm cause which is only detection text
+            # when we write to DB, we will add the latest notes, which may have more zones
+            print WRITER 'event_description--TYPE--'
+              . $mid
+              . '--SPLIT--'
+              . $eid
+              . '--SPLIT--'
+              . $resTxt . "\n";
+
+            $hookString = $resTxt;
+
+          } # end hook description
 
         }
         else {
@@ -4345,7 +4383,7 @@ sub initSocketServer {
     listen => $ssl_enabled ? $ssl_server : $port,
     tick_period => $event_check_interval,
     on_tick     => sub {
-      printDebug( '---------->Tick START<--------------', 2 );
+      printDebug( "---------->Tick START (active forks:$child_forks, total forks:$total_forks)<--------------", 2 );
       if ( $restart_interval
         && ( ( time() - $es_start_time ) > $restart_interval ) )
       {
@@ -4378,18 +4416,33 @@ sub initSocketServer {
 
       printDebug( 'There are ' . scalar @newEvents . ' new Events to process',
         2 );
+
+      my $cpid;
+      my $numEvents = scalar @newEvents;
+
+      if ($numEvents) {
+        my $sigset = POSIX::SigSet->new;
+        my $blockset = POSIX::SigSet->new(SIGCHLD);
+        sigprocmask(SIG_BLOCK, $blockset, $sigset) or Fatal("Can't block SIGCHLD: $!");
+        # Apparently the child closing the db connection can affect the parent.
+        zmDbDisconnect();
+      }
+
       foreach (@newEvents) {
         $child_forks++;
-        my $pid = fork;
-        if ( !defined $pid ) {
-          die "Cannot fork: $!";
-        }
-        elsif ( $pid == 0 ) {
+        $total_forks++;
+        if ($cpid = fork() ) {
+          # We will reconnect after for loop
+          # Parent
+          #$dbh = zmDbConnect(1);
+          # This logReinit is required.  Not sure why.
+          #logReinit();
 
+        } elsif (defined ($cpid)) {
+          # Child
           # do this to get a proper return value
           # $SIG{CHLD} = undef;
           local $SIG{'CHLD'} = 'DEFAULT';
-
           #$wss->shutdown();
           close(READER);
           $dbh = zmDbConnect(1);
@@ -4399,17 +4452,24 @@ sub initSocketServer {
             "Forked process:$$ to handle alarm eid:" . $_->{Alarm}->{EventId},
             1 );
 
-# send it the list of current events to handle bcause checkNewEvents() will clean it
+          # send it the list of current events to handle bcause checkNewEvents() will clean it
           processNewAlarmsInFork($_);
           printDebug( "Ending process:$$ to handle alarms", 1 );
-
+          logTerm();
+          zmDbDisconnect();
           exit 0;
-
+         
+        } else {
+           Fatal("Can't fork: $!");
         }
 
+      } # for loop
+      if ($numEvents) {
+        $dbh = zmDbConnect(1);
+        logReinit();
       }
 
-      printDebug( '---------->Tick END<--------------', 2 );
+      printDebug( "---------->Tick END (active forks:$child_forks, total forks:$total_forks)<--------------", 2 );
     },
 
     # called when a new connection comes in
