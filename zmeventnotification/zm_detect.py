@@ -31,7 +31,7 @@ from pyzm import __version__ as pyzm_version
 
 auth_header = None
 
-__app_version__ = '6.1.10'
+__app_version__ = '6.1.11'
 
 def remote_detect(stream=None, options=None, api=None, args=None):
     # This uses mlapi (https://github.com/pliablepixels/mlapi) to run inferencing and converts format to what is required by the rest of the code.
@@ -155,7 +155,7 @@ def remote_detect(stream=None, options=None, api=None, args=None):
     diff_time = (datetime.datetime.now() - start)
     g.logger.Debug(1,'remote detection inferencing took: {}'.format(diff_time))
     data = r.json()
-    print(r)
+    #print(r)
     matched_data = data['matched_data']
     if g.config['write_image_to_zm'] == 'yes'  and matched_data['frame_id']:
         url = '{}/index.php?view=image&eid={}&fid={}'.format(g.config['portal'], stream,matched_data['frame_id'] )
