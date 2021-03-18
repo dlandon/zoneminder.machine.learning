@@ -44,9 +44,8 @@ use Symbol qw(qualify_to_ref);
 use IO::Select;
 
 ####################################
-my $app_version = '6.1.12';
+my $app_version = '6.1.15';
 ####################################
-
 
 # do this before any log init etc.
 my $first_arg = @ARGV[0];
@@ -56,7 +55,7 @@ if ($first_arg eq '--version') {
 }
 
 #setpgrp();
-my $dbh = zmDbConnect(1);
+my $dbh = zmDbConnect(1); # adding 1 disconnects old connection
 logInit();
 logSetSignal();
 
@@ -156,7 +155,7 @@ use constant {
   DEFAULT_ESCONTROL_INTERFACE_FILE =>
     '/var/lib/zmeventnotification/misc/escontrol_interface.dat',
   DEFAULT_FCM_DATE_FORMAT => '%I:%M %p, %d-%b',
-  DEFAULT_FCM_ANDROID_PRIORITY=>'default',
+  DEFAULT_FCM_ANDROID_PRIORITY=>'high',
   DEFAULT_MAX_FCM_PER_MONTH_PER_TOKEN => 8000
 };
 
@@ -235,6 +234,8 @@ my $api_push_script;
 my $token_file;
 my $fcm_date_format;
 my $fcm_android_priority;
+my $fcm_android_ttl;
+
 
 my $ssl_enabled;
 my $ssl_cert_file;
@@ -306,11 +307,19 @@ my $dummyEventTimeLastSent = time();
 
 # This part makes sure we have the right core deps. See later for optional deps
 
-
+# for testing only
+#use lib qw(/home/pp/fiddle/perl-Net-WebSocket-Server/lib);
+use version;
 
 if ( !try_use('Net::WebSocket::Server') ) {
   Fatal('Net::WebSocket::Server missing');
 }
+
+Info ("Running on WebSocket library version:$Net::WebSocket::Server::VERSION");
+if (version->parse($Net::WebSocket::Server::VERSION) < version->parse('0.004000')) {
+  Warning ("You are using an old version of Net::WebSocket::Server which can cause lockups. Please upgrade. For more information please see https://zmeventnotification.readthedocs.io/en/latest/guides/es_faq.html#the-es-randomly-hangs");
+}
+
 if ( !try_use('IO::Socket::SSL') )  { Fatal('IO::Socket::SSL missing'); }
 if ( !try_use('IO::Handle') )       { Fatal('IO::Handle'); }
 if ( !try_use('Config::IniFiles') ) { Fatal('Config::Inifiles missing'); }
@@ -554,7 +563,9 @@ sub loadEsConfigSettings {
   $fcm_date_format =
     config_get_val( $config, 'fcm', 'date_format', DEFAULT_FCM_DATE_FORMAT );
   $fcm_android_priority = 
-    config_get_val( $config, 'fcm', 'android_priority', DEFAULT_FCM_ANDROID_PRIORITY );
+    config_get_val( $config, 'fcm', 'fcm_android_priority', DEFAULT_FCM_ANDROID_PRIORITY );
+  $fcm_android_ttl = 
+    config_get_val( $config, 'fcm', 'fcm_android_ttl');
 
   $use_api_push =
     config_get_val( $config, 'push', 'use_api_push', DEFAULT_USE_API_PUSH );
@@ -703,7 +714,8 @@ sub yes_or_no {
 }
 
 sub value_or_undefined {
-  return $_[0] || '(undefined)';
+  return defined($_[0]) ? $_[0] : '(undefined)';
+  #return $_[0] || '(undefined)';
 }
 
 sub present_or_not {
@@ -746,6 +758,7 @@ Use FCM V1 APIs....................... ${\(yes_or_no($use_fcmv1))}
 FCM Date Format....................... ${\(value_or_undefined($fcm_date_format))}
 Only show latest FCMv1 message........ ${\(yes_or_no($replace_push_messages))}
 Android FCM push priority............. ${\(value_or_undefined($fcm_android_priority))}
+Android FCM push ttl.................. ${\(value_or_undefined($fcm_android_ttl))}
 
 Token file ........................... ${\(value_or_undefined($token_file))}
 
@@ -1335,7 +1348,7 @@ sub checkNewEvents() {
   my @newEvents  = ();
 
   #printDebug("inside checkNewEvents()");
-  if ( ( time() - $monitor_reload_time ) > $monitor_reload_interval ) {
+  if ( (( time() - $monitor_reload_time ) > $monitor_reload_interval)) {
 
     # use this time to keep token counters updated
     my $update_tokens = 0;
@@ -1401,8 +1414,10 @@ sub checkNewEvents() {
 
     foreach my $monitor ( values(%monitors) ) {
       zmMemInvalidate($monitor);
-    }
+    } 
     loadMonitors();
+   
+    
   }
 
   # loop through all monitors getting SHM state
@@ -1537,6 +1552,8 @@ sub loadMonitor {
 # Refreshes list of monitors from DB
 #
 sub loadMonitors {
+
+
   printInfo("Re-loading monitors");
   $monitor_reload_time = time();
 
@@ -1919,7 +1936,7 @@ sub sendOverFCMV1 {
       icon     => 'ic_stat_notification',
       priority => $fcm_android_priority
     };
-
+    $message_v2->{android}->{ttl} = $fcm_android_ttl if (defined($fcm_android_ttl));
     $message_v2->{android}->{tag} = 'zmninjapush' if ($replace_push_messages);
     if (defined ($obj->{appversion}) && ($obj->{appversion} ne "unknown")) {
     printDebug ('setting channel to zmninja',2);
@@ -3070,13 +3087,14 @@ sub initFCMTokens {
   my %tokens_data;
   my $hr;
   my $data = do { local $/ = undef; <$fh> };
+  close ($fh);
   eval { $hr = decode_json($data); };
   if ($@) {
     printInfo("tokens is not JSON, migrating format...");
-    close($fh);
     migrateTokens();
     open( my $fh, '<', $token_file ) or Fatal("Error opening $token_file: $!");
     my $data = do { local $/ = undef; <$fh> };
+    close ($fh);
     eval { $hr = decode_json($data); };
     if ($@) {
       Fatal("Migration to JSON file failed: $!");
@@ -4373,6 +4391,7 @@ sub initSocketServer {
         Proto         => 'tcp',
         Reuse         => 1,
         ReuseAddr     => 1,
+        SSL_startHandshake => 0,
         SSL_cert_file => $ssl_cert_file,
         SSL_key_file  => $ssl_key_file
       );
@@ -4463,9 +4482,10 @@ sub initSocketServer {
           #$wss->shutdown();
           close(READER);
           $dbh = zmDbConnect(1);
-          logReinit();
-
-          
+          logTerm();
+          logInit();
+          logSetSignal();
+         
           printDebug(
             "Forked process:$$ to handle alarm eid:" . $_->{Alarm}->{EventId},
             1 );
