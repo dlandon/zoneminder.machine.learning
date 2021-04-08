@@ -31,7 +31,7 @@ from pyzm import __version__ as pyzm_version
 
 auth_header = None
 
-__app_version__ = '6.1.18'
+__app_version__ = '6.1.19'
 
 def remote_detect(stream=None, options=None, api=None, args=None):
     # This uses mlapi (https://github.com/pliablepixels/mlapi) to run inferencing and converts format to what is required by the rest of the code.
@@ -405,6 +405,9 @@ def main_handler():
             time.sleep(g.config['wait'])
         from pyzm.ml.detect_sequence import DetectSequence
         m = DetectSequence(options=ml_options, global_config=g.config)
+        if args.get('monitorid'):
+            stream_options['mid'] = args.get('monitorid')
+
         matched_data,all_data = m.detect_stream(stream=stream, options=stream_options)
     
 
@@ -445,12 +448,19 @@ def main_handler():
     else:
         prefix = '[x] '
         #g.logger.Debug (1,'CONFIDENCE ARRAY:{}'.format(conf))
+
     for idx, l in enumerate(matched_data['labels']):
         if l not in seen:
-            if g.config['show_percent'] == 'no':
-                pred = pred + l + ','
+            label_txt = ''
+            if g.config.get('show_percent') == 'no':
+                label_txt =  l + ','
             else:
-                pred = pred + l + ':{:.0%}'.format(matched_data['confidences'][idx]) + ' '
+                label_txt =  l + ':{:.0%}'.format(matched_data['confidences'][idx]) + ' '
+            if g.config.get('show_models')=='yes':
+                model_txt ='({}) '.format(matched_data['model_names'][idx])
+            else:
+                model_txt =''
+            pred = pred + model_txt + label_txt
             seen[l] = 1
 
     if pred != '':
