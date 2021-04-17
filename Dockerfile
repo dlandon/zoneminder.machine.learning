@@ -1,4 +1,4 @@
-FROM phusion/baseimage:focal-1.0.0alpha1-amd64 as builder
+FROM phusion/baseimage:master as builder
 
 LABEL maintainer="dlandon"
 
