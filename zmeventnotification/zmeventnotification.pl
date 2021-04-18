@@ -54,7 +54,7 @@ $ENV{SHELL} = '/bin/sh' if exists $ENV{SHELL};
 delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
 
 ####################################
-my $app_version = '6.1.19';
+my $app_version = '6.1.22';
 ####################################
 
 # do this before any log init etc.
@@ -137,7 +137,9 @@ use constant {
     '/var/lib/zmeventnotification/misc/escontrol_interface.dat',
   DEFAULT_FCM_DATE_FORMAT => '%I:%M %p, %d-%b',
   DEFAULT_FCM_ANDROID_PRIORITY=>'high',
-  DEFAULT_MAX_FCM_PER_MONTH_PER_TOKEN => 8000
+  DEFAULT_MAX_FCM_PER_MONTH_PER_TOKEN => 8000,
+
+  DEFAULT_MAX_PARALLEL_HOOKS => 0,
 };
 
 # connection state
@@ -172,6 +174,7 @@ use constant {
 my $es_terminate = 0;
 
 my $child_forks = 0;    # Global tracker of active children
+my $parallel_hooks = 0; # Global tracker for active hooks
 my $total_forks = 0;    # Global tracker of all forks since start
 
 # Declare options.
@@ -276,6 +279,8 @@ my $prefix = "PARENT:";
 my $pcnt = 0;
 
 my %fcm_tokens_map;
+
+my $max_parallel_hooks= 0;
 
 my %monitors            = ();
 my %active_events       = ();
@@ -693,6 +698,12 @@ sub loadEsConfigSettings {
     DEFAULT_EVENT_END_NOTIFY_ON_HOOK_SUCCESS
   );
 
+  $max_parallel_hooks = config_get_val(
+    $config, 'hook',
+    'max_parallel_hooks',
+    DEFAULT_MAX_PARALLEL_HOOKS
+  );
+
   # get channels and convert to hash
 
   %event_start_notify_on_hook_fail = map { $_ => 1 }
@@ -803,10 +814,11 @@ Send event end notification............${\(yes_or_no($send_event_end_notificatio
 Monitor rules JSON file................${\(value_or_undefined($es_rules_file))}
 
 Use Hooks............................. ${\(yes_or_no($use_hooks))}
+Max Parallel Hooks.................... ${\(value_or_undefined($max_parallel_hooks))}
 Hook Script on Event Start ........... ${\(value_or_undefined($event_start_hook))}
 User Script on Event Start.............${\(value_or_undefined($event_start_hook_notify_userscript))}
 Hook Script on Event End.............. ${\(value_or_undefined($event_end_hook))}
-User Script on Event End.............${\(value_or_undefined($event_end_hook_notify_userscript))}
+User Script on Event End...............${\(value_or_undefined($event_end_hook_notify_userscript))}
 Hook Skipped monitors................. ${\(value_or_undefined($hook_skip_monitors))}
 
 Notify on Event Start (hook success).. ${\(value_or_undefined($event_start_notify_on_hook_success))}
@@ -2370,6 +2382,17 @@ sub processJobs {
         delete( $active_events{$mid}->{$eid} );
         $child_forks--;
       }
+      elsif ( $job eq 'update_parallel_hooks' ) {
+        if ($msg eq "add") {
+          $parallel_hooks++;
+        }
+        elsif ($msg eq "del") {
+          $parallel_hooks--;
+        } 
+        else { 
+          printError ("Parallel hooks update: command not understood: $msg");
+        }
+      }
       elsif ( $job eq 'mqtt_publish' ) {
         my ( $id, $topic, $payload ) = split( '--SPLIT--', $msg );
         printDebug( "Job: MQTT Publish on topic: $topic", 2 );
@@ -3857,10 +3880,14 @@ sub processNewAlarmsInFork {
           if ( $cmd =~ /^(.*)$/ ) {
             $cmd = $1;
           }
+          print WRITER "update_parallel_hooks--TYPE--add\n";
           my $res = `$cmd`;
+          $hookResult = $? >> 8; # make sure it is before pipe
+
+          print WRITER "update_parallel_hooks--TYPE--del\n";
+
           chomp($res);
           my ( $resTxt, $resJsonString ) = parseDetectResults($res);
-          $hookResult      = $? >> 8;
           $startHookResult = $hookResult;
 
           printDebug(
@@ -4089,10 +4116,15 @@ sub processNewAlarmsInFork {
           if ( $cmd =~ /^(.*)$/ ) {
             $cmd = $1;
           }
+
+          print WRITER "update_parallel_hooks--TYPE--add\n";
           my $res = `$cmd`;
+          $hookResult = $? >> 8; # make sure it is before pipe
+
+          print WRITER "update_parallel_hooks--TYPE--del\n";
+
           chomp($res);
           my ( $resTxt, $resJsonString ) = parseDetectResults($res);
-          $hookResult = $? >> 8;
 
           $alarm->{End}->{State} = 'ready';
           printDebug(
@@ -4415,7 +4447,7 @@ sub initSocketServer {
         exit(0);
       }
       my $elapsed_time_min =  ceil((time() - $es_start_time)/60);
-      printDebug( "----------> Tick START (active forks:$child_forks, total forks:$total_forks, running for:$elapsed_time_min min)<--------------", 2 );
+      printDebug( "----------> Tick START (active forks:$child_forks, total forks:$total_forks, active hooks: $parallel_hooks running for:$elapsed_time_min min)<--------------", 2 );
       if ( $restart_interval
         && ( ( time() - $es_start_time ) > $restart_interval ) )
       {
@@ -4441,7 +4473,7 @@ sub initSocketServer {
       checkConnection();
       processJobs();
 
-      printDebug( "There are $child_forks active child forks...", 2 );
+      printDebug( "There are $child_forks active child forks & $parallel_hooks zm_detect processes running...", 2 );
       my (@newEvents) = checkNewEvents();
 
       #print Dumper(\@newEvents);
@@ -4463,6 +4495,10 @@ sub initSocketServer {
       }
 
       foreach (@newEvents) {
+        if (($parallel_hooks >= $max_parallel_hooks) && ($max_parallel_hooks != 0)) {
+          printError("There are $parallel_hooks hooks running as of now. This exceeds your set limit of max_parallel_hooks=$max_parallel_hooks. Ignoring this event. Either increase your max_parallel_hooks value, or, adjust your ZM motion sensitivity ");
+          return;
+        }
         $child_forks++;
         $total_forks++;
         if ($cpid = fork() ) {
@@ -4518,7 +4554,7 @@ sub initSocketServer {
       }
 
       check_for_duplicate_token();
-      printDebug( "---------->Tick END (active forks:$child_forks, total forks:$total_forks)<--------------", 2 );
+      printDebug( "---------->Tick END (active forks:$child_forks, total forks:$total_forks, active hooks: $parallel_hooks)<--------------", 2 );
     },
 
     # called when a new connection comes in
