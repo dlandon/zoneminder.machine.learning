@@ -1,5 +1,8 @@
 ## Change Log
 
+### 2021-05-20
+- Update zmNinja Event Notification Server to version 6.1.23.
+
 ### 2021-04-18
 - Update zmNinja Event Notification Server to version 6.1.22.
 

@@ -31,7 +31,7 @@ from pyzm import __version__ as pyzm_version
 
 auth_header = None
 
-__app_version__ = '6.1.22'
+__app_version__ = '6.1.23'
 
 def remote_detect(stream=None, options=None, api=None, args=None):
     # This uses mlapi (https://github.com/pliablepixels/mlapi) to run inferencing and converts format to what is required by the rest of the code.
@@ -312,6 +312,8 @@ def main_handler():
     'portalurl': g.config['portal'],
     'user': g.config['user'],
     'password': g.config['password'] ,
+    'basic_auth_user': g.config['basic_user'],
+    'basic_auth_password': g.config['basic_password'],
     'logger': g.logger, # use none if you don't want to log to ZM,
     'disable_ssl_cert_check': False if g.config['allow_self_signed']=='no' else True
     }

@@ -87,13 +87,13 @@ config_vals = {
         },
         'basic_user':{
             'section': 'general',
-            'default': '',
+            'default': None,
             'type': 'string'
         },
      
         'basic_password':{
             'section': 'general',
-            'default': '',
+            'default': None,
             'type': 'string'
         },
         'image_path':{
@@ -430,6 +430,17 @@ config_vals = {
             'section': 'alpr',
             'default': 'no',
             'type': 'string'
+        },
+
+        'platerec_payload':{
+            'section': 'alpr',
+            'default': None,
+            'type': 'eval'
+        },
+        'platerec_config':{
+            'section': 'alpr',
+            'default': None,
+            'type': 'eval'
         },
 
        
