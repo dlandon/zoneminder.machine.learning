@@ -12,7 +12,7 @@ ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
 	TZ="Etc/UTC" \
 	TERM="xterm" \
 	PHP_VERS="7.4" \
-	ZM_VERS="1.34" \
+	ZM_VERS="1.36" \
 	PUID="99" \
 	PGID="100"
 
@@ -80,7 +80,6 @@ RUN	cd /root && \
 	echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
 	sed -i "s|^;date.timezone =.*|date.timezone = ${TZ}|" /etc/php/$PHP_VERS/apache2/php.ini && \
 	service mysql start && \
-	mysql -uroot < /usr/share/zoneminder/db/zm_create.sql && \
 	mysql -uroot -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';" && \
 	mysqladmin -uroot reload && \
 	mysql -sfu root < "mysql_secure_installation.sql" && \
@@ -97,8 +96,7 @@ RUN	mv /root/zoneminder /etc/init.d/zoneminder && \
 	service zoneminder start
 
 FROM build5 as build6
-RUN	systemd-tmpfiles --create zoneminder.conf && \
-	mv /root/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf && \
+RUN	mv /root/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf && \
 	mkdir /etc/apache2/ssl/ && \
 	mkdir -p /var/lib/zmeventnotification/images && \
 	chown -R www-data:www-data /var/lib/zmeventnotification/ && \
