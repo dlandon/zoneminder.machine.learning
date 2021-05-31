@@ -2,6 +2,7 @@
 
 ### 2021.05.30
 - Fix for Zoneminder 1.36.3.
+- Update to opencv 4.5.2.
 
 ### 2021-05-23
 - Update to Zoneminder 1.36.

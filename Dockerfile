@@ -112,12 +112,12 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 
 FROM build6 as build7
 RUN	cd /root && \
-	wget -q -O opencv.zip https://github.com/opencv/opencv/archive/4.5.1.zip && \
-	wget -q -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.5.1.zip && \
+	wget -q -O opencv.zip https://github.com/opencv/opencv/archive/4.5.2.zip && \
+	wget -q -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.5.2.zip && \
 	unzip opencv.zip && \
 	unzip opencv_contrib.zip && \
 	mv $(ls -d opencv-*) opencv && \
-	mv opencv_contrib-4.5.1 opencv_contrib && \
+	mv opencv_contrib-4.5.2 opencv_contrib && \
 	rm *.zip && \
 	cd /root/opencv && \
 	mkdir build && \

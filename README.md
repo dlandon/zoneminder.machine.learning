@@ -1,5 +1,5 @@
 ## Zoneminder Docker
-(Current version: 1.34)
+(Current version: 1.36)
 
 We have set up a GoFundMe to fund the development of a new docker container that will be for Zoneminder and ES/ML with all the ES/ML modules pre-configured and for maintenance and support going forward.
 
