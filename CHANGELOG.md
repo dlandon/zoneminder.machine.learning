@@ -1,5 +1,8 @@
 ## Change Log
 
+### 2021.05.30
+- Fix for Zoneminder 1.36.3.
+
 ### 2021-05-23
 - Update to Zoneminder 1.36.
 
