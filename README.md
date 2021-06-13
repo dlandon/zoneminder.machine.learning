@@ -6,16 +6,16 @@ We have set up a GoFundMe to fund the development of a new docker container that
 [GoFundMe](https://www.gofundme.com/f/maintenance-of-zoneminder-docker-with-es-and-ml?utm_source=customer&utm_medium=copy_link&utm_campaign=p_cf+share-flow-1)
 
 ### About
-This is an easy to run dockerized image of [ZoneMinder](https://github.com/ZoneMinder/zoneminder) along with the the [ZM Event Notification Server](https://github.com/pliablepixels/zmeventnotification) and its machine learning subsystem (which is disabled by default but can be enabled by a simple configuration). 
+This is an easy to run dockerized image of [ZoneMinder](https://github.com/ZoneMinder/zoneminder) along with the the [ZM Event Notification Server](https://github.com/pliablepixels/zmeventnotification) and its machine learning subsystem.
 
 The configuration settings that are needed for this implementation of Zoneminder are pre-applied and do not need to be changed on the first run of Zoneminder.
 
-This version will now upgrade from previous versions.
+This version will now upgrade Zoneminder from previous versions.
 
 You can donate [here](https://www.paypal.com/us/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=EJGPC7B5CS66E).
 
 ### Support
-This docker container was developed for and is currently supported on Unraid. You are free to use it on other platforms, but there is no way I can reproduce or troubleshoot any issues when used on other platforms.
+There is minimal support for this docker container at this time.
 
 Go to the Zoneminder Forum [here](https://forums.zoneminder.com/) for support.
 
@@ -23,7 +23,7 @@ Go to the Zoneminder Forum [here](https://forums.zoneminder.com/) for support.
 Install the docker container by going to a command line and enter the command:
 
 ```bash
-docker pull dlandon/zoneminder
+docker pull dlandon/zoneminder.machine.learning
 ```
 
 This will pull the zoneminder docker image. Once it is installed you are ready to run the docker container.
