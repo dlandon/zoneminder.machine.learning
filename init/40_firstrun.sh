@@ -506,6 +506,7 @@ echo "Starting services..."
 service apache2 start
 if [ "$NO_START_ZM" != "1" ]; then
 	# Start mysql
+	sleep 3
 	service mysql start
 
 	# Update the database if necessary

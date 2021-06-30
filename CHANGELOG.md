@@ -1,5 +1,8 @@
 ## Change Log
 
+### 2021.06.30
+- Apply a fix for database failure on first run.
+
 ### 2021.05.30
 - Fix for Zoneminder 1.36.3.
 - Update to opencv 4.5.2.
