@@ -10,7 +10,7 @@ services:
         runtime: nvidia
         network_mode: "bridge"
         privileged: false
-        shm_size=8G
+        shm_size: "8gb"
         environment:
             - TZ=America/New_York
             - PUID=99
@@ -20,7 +20,7 @@ services:
         volumes:
             - config:/config:rw
             - data:/var/cache/zoneminder:rw
-            - cuda:/usr/local/cuda:/usr/local/cuda
+            - cuda:/usr/local/cuda
 volumes:
     config:
     data:
