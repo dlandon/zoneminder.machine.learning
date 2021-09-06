@@ -77,6 +77,7 @@ RUN	apt-get -y install python3-pip && \
 FROM build3 as build4
 RUN	cd /root && \
 	chown -R www-data:www-data /usr/share/zoneminder/ && \
+	sed -i "s|^#Mutex file|Mutex file|" /etc/apache2/apache2.conf && \
 	echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
 	sed -i "s|^;date.timezone =.*|date.timezone = ${TZ}|" /etc/php/$PHP_VERS/apache2/php.ini && \
 	service mysql start && \
