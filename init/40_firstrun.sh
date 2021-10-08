@@ -513,7 +513,7 @@ if [ "$NO_START_ZM" != "1" ]; then
 	zmupdate.pl -nointeractive
 	zmupdate.pl -f
 
-	sleep 10
+	sleep 15
 	service zoneminder start
 else
 	echo "MySql and Zoneminder not started."
