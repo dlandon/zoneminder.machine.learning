@@ -13,6 +13,7 @@ ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
 	TERM="xterm" \
 	PHP_VERS="7.4" \
 	ZM_VERS="1.36" \
+	OPENCV_VERS="4.5.3" \
 	PUID="99" \
 	PGID="100"
 
@@ -112,12 +113,12 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 
 FROM build6 as build7
 RUN	cd /root && \
-	wget -q -O opencv.zip https://github.com/opencv/opencv/archive/4.5.2.zip && \
-	wget -q -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.5.2.zip && \
+	wget -q -O opencv.zip https://github.com/opencv/opencv/archive/$OPENCV_VERS.zip && \
+	wget -q -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/$OPENCV_VERS.zip && \
 	unzip opencv.zip && \
 	unzip opencv_contrib.zip && \
 	mv $(ls -d opencv-*) opencv && \
-	mv opencv_contrib-4.5.2 opencv_contrib && \
+	mv opencv_contrib-$OPENCV_VERS opencv_contrib && \
 	rm *.zip && \
 	cd /root/opencv && \
 	mkdir build && \
