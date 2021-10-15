@@ -106,3 +106,50 @@ If you have a situation where the container fails to start, you can set `NO_STAR
 service mysql start
 service zoneminder start
 ```
+
+### Using Docker Compose (optional)
+
+If you want to use Docker Compose to manage the Zoneminder Docker container, you can follow these steps.
+
+Add the following to a docker-compose.yml file.
+
+```
+version: '3'
+services:
+  zoneminder:
+    image: "dlandon/zoneminder.machine.learning"
+    network_mode: bridge
+    privileged: false
+    shm_size: '4gb'
+    ports:
+      - "8443:443"
+      - "9000:9000"
+    environment:
+      TZ: "Africa/Johannesburg"
+      PUID: 99
+      PGID: 100
+      MULTI_PORT_START: 0
+      MULTI_PORT_END: 0
+    volumes:
+      - /mnt/Zoneminder:/config
+      - /mnt/Zoneminder/data:/var/cache/zoneminder
+```
+For http:// access add `- "8080:80"` under `ports`. 
+
+In the directory where you saved the file, run the following to start the container:
+
+```bash
+docker-compose up -d
+```
+
+To stop the container:
+
+```bash
+docker-compose down
+```
+
+To get a command line interface inside the container, run:
+
+```bash
+docker-compose exec zoneminder bash
+```
