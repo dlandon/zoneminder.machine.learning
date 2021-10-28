@@ -1,4 +1,4 @@
-## Zoneminder Docker
+## Zoneminder Docker (Deprecated)
 (Current version: 1.36)
 
 This container will no longer be maintained or updated.  The current ZM Event Server is being phased out at the end of 2021 and this container will not be updated when a new ZM Event Server is released.
