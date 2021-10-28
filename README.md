@@ -1,9 +1,7 @@
 ## Zoneminder Docker
 (Current version: 1.36)
 
-We have set up a GoFundMe to fund the development of a new docker container that will be for Zoneminder and ES/ML with all the ES/ML modules pre-configured and for maintenance and support going forward.
-
-[GoFundMe](https://www.gofundme.com/f/maintenance-of-zoneminder-docker-with-es-and-ml?utm_source=customer&utm_medium=copy_link&utm_campaign=p_cf+share-flow-1)
+This container will no longer be maintained or updated.  The current ZM Event Server is being phased out at the end of 2021 and this container will not be updated when a new ZM Event Server is released.
 
 ### About
 This is an easy to run dockerized image of [ZoneMinder](https://github.com/ZoneMinder/zoneminder) along with the the [ZM Event Notification Server](https://github.com/pliablepixels/zmeventnotification) and its machine learning subsystem.
