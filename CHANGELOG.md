@@ -1,5 +1,8 @@
 ## Change Log
 
+### 2021.10.29
+- Fix update issue with mariadb.
+
 ### 2021.10.08
 - Delay start of Zoneminder on first run.
 - Update Opencv to 4.5.3.
