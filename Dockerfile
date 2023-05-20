@@ -1,4 +1,4 @@
-FROM phusion/baseimage:master as builder
+FROM phusion/baseimage:jammy-1.0.1 as builder
 
 LABEL maintainer="dlandon"
 
@@ -11,9 +11,9 @@ ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
 	LANGUAGE="en_US.UTF-8" \
 	TZ="Etc/UTC" \
 	TERM="xterm" \
-	PHP_VERS="7.4" \
+	PHP_VERS="8.1" \
 	ZM_VERS="1.36" \
-	OPENCV_VERS="4.5.3" \
+	OPENCV_VERS="4.7.0" \
 	PUID="99" \
 	PGID="100"
 
