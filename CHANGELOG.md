@@ -1,5 +1,10 @@
 ## Change Log
 
+### 2023-05-20
+- Update Ubuntu to 22.04
+- Update zmNinja Event Notification Server to version 6.1.28.
+- Update Opencv to 4.7.0
+
 ### 2021.10.29
 - Fix update issue with mariadb.
 
